@@ -10,6 +10,9 @@ From the root directory run
 
 ```
 pytest
+
+# Run with -s to capture the time from the performance benchmarks
+pytest -s
 ```
 
 ## Examples
