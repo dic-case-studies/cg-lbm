@@ -72,3 +72,19 @@ def compute_dst_phase_field(cXs: jax.Array, cYs: jax.Array, phase_field: jax.Arr
             jnp.roll(phase_field, (-cx, -cy), axis=(0, 1)))
 
     return jnp.stack(dst_phase_field)
+
+
+@jit
+@partial(vmap, in_axes=(None, None, 1), out_axes=0)
+@partial(vmap, in_axes=(None, None, 1), out_axes=0)
+def compute_phi_grad(cXYs: jax.Array, weights: jax.Array, dst_phase_field: jax.Array):
+    """
+    cXYs: (k, 2,)
+    weights: (k,)
+    dst_phase_field: (k, LX, LY,)
+
+    return: (LX, LY, 2)
+    """
+    phi_grad = 3 * jnp.einsum("k,k,kx->x", weights, dst_phase_field, cXYs)
+
+    return phi_grad

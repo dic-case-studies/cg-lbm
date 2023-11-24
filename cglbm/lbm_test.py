@@ -3,7 +3,8 @@ from absl.testing import parameterized
 import jax
 from jax import numpy as jnp
 import cglbm.test_utils as test_utils
-from cglbm.lbm import eq_dist_phase_field, eq_dist, grid_eq_dist, compute_phase_field, compute_dst_phase_field
+from cglbm.lbm import eq_dist_phase_field, eq_dist, grid_eq_dist, compute_phase_field, \
+    compute_dst_phase_field, compute_phi_grad
 
 
 class LBMTest(absltest.TestCase):
@@ -105,6 +106,24 @@ class LBMTest(absltest.TestCase):
             return compute_dst_phase_field(sys.cXs, sys.cYs, state["phi"])
 
         test_utils.benchmark("benchmark compute dst phase field", init_fn, step_fn)
+
+
+    def test_compute_phi_grad_perf(self):
+        sys = test_utils.load_config("params.ini")
+
+        def init_fn(rng):
+            LX = sys.LX
+            LY = sys.LY
+            rng1, _ = jax.random.split(rng, 2)
+            dst_phase_field = jax.random.normal(rng1, (9, LX, LY))
+            return {
+                "dst_phase_field": dst_phase_field
+            }
+
+        def step_fn(state):
+            return compute_phi_grad(sys.cXYs, sys.weights, state["dst_phase_field"])
+
+        test_utils.benchmark("benchmark compute phi grad", init_fn, step_fn)
 
 
 if __name__ == "__main__":
