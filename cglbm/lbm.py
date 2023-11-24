@@ -8,6 +8,14 @@ from jax import numpy as jnp
 @partial(vmap, in_axes=(None, None, 0, 0), out_axes=1)
 @partial(vmap, in_axes=(None, None, 0, 0), out_axes=1)
 def eq_dist_phase_field(cXYs, weights, phi, u):
+    """
+    cXYs: (k, 2,)
+    weights: (k,)
+    phi: (LX, LY,)
+    u: (LX, LY, 2,)
+
+    return: (k, LX, LY,)
+    """
     cu = jnp.sum(u * cXYs)
     u2 = jnp.sum(jnp.square(u))
     return weights * phi * (1.0 - 1.5 * u2 + 3.0 * cu + 4.5 * cu * cu)
@@ -15,6 +23,15 @@ def eq_dist_phase_field(cXYs, weights, phi, u):
 
 @jit
 def eq_dist(cXYs, weights, phi_weights, pressure, u):
+    """
+    cXYs: (k, 2,)
+    weights: (k,)
+    phi_weights: (k,)
+    pressure: (1,)
+    u: (2,)
+
+    return: (k,)
+    """
     cu = jnp.sum(u * cXYs)
     u2 = jnp.sum(jnp.square(u))
     
