@@ -3,7 +3,7 @@ from absl.testing import parameterized
 import jax
 from jax import numpy as jnp
 import cglbm.test_utils as test_utils
-from cglbm.lbm import eq_dist_phase_field, eq_dist, grid_eq_dist
+from cglbm.lbm import eq_dist_phase_field, eq_dist, grid_eq_dist, compute_phase_field, compute_dst_phase_field
 
 
 class LBMTest(absltest.TestCase):
@@ -69,6 +69,42 @@ class LBMTest(absltest.TestCase):
             return eq_dist(sys.cXYs, sys.weights, sys.phi_weights, state["phi"], state["u"])
 
         test_utils.benchmark("benchmark eq dist", init_fn, step_fn)
+
+
+    def test_compute_phase_field_perf(self):
+        sys = test_utils.load_config("params.ini")
+
+        def init_fn(rng):
+            LX = sys.LX
+            LY = sys.LY
+            rng1, _ = jax.random.split(rng, 2)
+            f = jax.random.normal(rng1, (9, LX, LY))
+            return {
+                "f": f
+            }
+
+        def step_fn(state):
+            return compute_phase_field(state["f"])
+
+        test_utils.benchmark("benchmark compute phase field", init_fn, step_fn)
+
+
+    def test_compute_dst_phase_field_perf(self):
+        sys = test_utils.load_config("params.ini")
+
+        def init_fn(rng):
+            LX = sys.LX
+            LY = sys.LY
+            rng1, _ = jax.random.split(rng, 2)
+            phi = jax.random.normal(rng1, (LX, LY))
+            return {
+                "phi": phi
+            }
+
+        def step_fn(state):
+            return compute_dst_phase_field(sys.cXs, sys.cYs, state["phi"])
+
+        test_utils.benchmark("benchmark compute dst phase field", init_fn, step_fn)
 
 
 if __name__ == "__main__":

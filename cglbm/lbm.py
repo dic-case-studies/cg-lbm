@@ -29,3 +29,29 @@ def eq_dist(cXYs, weights, phi_weights, pressure, u):
 
 _eq_dist = vmap(eq_dist, in_axes=(None, None, None, 0, 0), out_axes=1)
 grid_eq_dist = jit(vmap(_eq_dist, in_axes=(None, None, None, 0, 0), out_axes=1))
+
+
+def compute_phase_field(f: jax.Array):
+    """
+    f: (k, LX, LY,)
+
+    return: (LX,LY,)
+    """
+    return jnp.einsum("kij->ij", f)
+
+
+def compute_dst_phase_field(cXs: jax.Array, cYs: jax.Array, phase_field: jax.Array):
+    """
+    cXs: (k,)
+    cYs: (k,)
+    phase_field: (LX, LY,)
+
+    return: (k, LX, LY,)
+    """
+    dst_phase_field = []
+
+    for i, cx, cy in zip(jnp.arange(9), cXs, cYs):
+        dst_phase_field.append(
+            jnp.roll(phase_field, (-cx, -cy), axis=(0, 1)))
+
+    return jnp.stack(dst_phase_field)
