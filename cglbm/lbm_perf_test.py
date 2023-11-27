@@ -155,7 +155,7 @@ class LBMPerfTest(absltest.TestCase):
                 state["phase_field"],
                 state["dst_phase_field"],
                 state["phi_grad"]
-                )
+            )
 
         test_utils.benchmark("benchmark surface tension force", init_fn, step_fn)
 
@@ -302,6 +302,36 @@ class LBMPerfTest(absltest.TestCase):
 
         test_utils.benchmark("benchmark compute propagation", init_fn, step_fn)
 
+
+    def test_perf_compute_total_force(self):
+        system = test_utils.load_config("params.ini")
+
+        def init_fn(rng):
+            LX = system.LX
+            LY = system.LY
+            rngs = jax.random.split(rng, 3)
+            curvature_force = jax.random.normal(rngs[0], (LX, LY, 2))
+            viscous_force = jax.random.normal(rngs[1], (LX, LY))
+            rho = jax.random.normal(rngs[2], (LX, LY))
+
+            return {
+                "gravityX": system.gravityX,
+                "gravityY": system.gravityY,
+                "curvature_force": curvature_force,
+                "viscous_force": viscous_force,
+                "rho": rho
+            }
+
+        def step_fn(state):
+            return compute_total_force(
+                state["gravityX"],
+                state["gravityY"],
+                state["curvature_force"],
+                state["viscous_force"],
+                state["rho"]
+            )
+
+        test_utils.benchmark("benchmark compute total force", init_fn, step_fn)
 
 if __name__ == "__main__":
     absltest.main()

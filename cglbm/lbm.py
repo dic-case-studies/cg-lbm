@@ -322,3 +322,23 @@ def compute_propagation(
     f_dst = jnp.stack(f)
 
     return handle_obstacle(cXs, cYs, weights, obs, obsVel, f_new, f_dst, N_new, N_dst)
+
+
+@jit
+@partial(vmap, in_axes=(None, None, 0, 0, 0), out_axes=0)
+@partial(vmap, in_axes=(None, None, 0, 0, 0), out_axes=0)
+def compute_total_force(
+    gravityX: jnp.float32,
+    gravityY: jnp.float32,
+    curvature_force: jax.Array,
+    viscous_force: jax.Array,
+    rho: jax.Array):
+    """
+    gravityX: ()
+    gravityY: ()
+    curvature_force: (X, Y, 2,)
+    viscous_force: (X, Y,)
+    rho: (X, Y,)
+    """
+    rest_force = jnp.stack([rho* gravityX, rho * gravityY])
+    return rest_force + curvature_force + viscous_force
