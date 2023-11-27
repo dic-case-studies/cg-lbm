@@ -1,7 +1,8 @@
 from functools import partial
 import jax
-from jax import vmap, jit
+from jax import vmap, jit, lax
 from jax import numpy as jnp
+import numpy as np
 
 
 @jit
@@ -147,7 +148,18 @@ def compute_viscosity_correction(
     kin_visc_local,
     mom,
     mom_eq):
+    """
+    invM_D2Q9: (k,k,)
+    cMs: (k,k,)
+    density_one: jnp.float32
+    density_two: jnp.float32
+    phi_grad: (X,Y,2,)
+    kin_visc_local: (X,Y,)
+    mom: (X, Y, 9)
+    mom_eq: (X, Y, 9)
 
+    return (X, Y)
+    """
     tauL = 0.5 + 3 * kin_visc_local
 
     S_D2Q9 = jnp.ones(9)
@@ -162,3 +174,51 @@ def compute_viscosity_correction(
         jnp.einsum('kmn, k, n -> m',  cMs, mom_diff, phi_grad)
 
     return viscous_force
+
+
+@jit
+@partial(vmap, in_axes=(None, 0, 0, 0, 0, 0, 0, 1), out_axes=1)
+@partial(vmap, in_axes=(None, 0, 0, 0, 0, 0, 0, 1), out_axes=1)
+def compute_collision(
+    invM_D2Q9,
+    obs,
+    mom,
+    mom_eq,
+    kin_visc_local,
+    interface_force,
+    rho,
+    N 
+):
+    """
+    invM_D2Q9: (k,k,)
+    obs: (X,Y)
+    mom: (X, Y, 9)
+    mom_eq: (X, Y, 9)
+    kin_visc_local: (X,Y,)
+    interface_force: (X,Y,2,)
+    rho: (X,Y,)
+    N: (k,X,Y)
+
+    return (k,X, Y)
+    """
+    # TODO: For collision the u, pressure, rho are are supposed to be taken after
+    # the compute_density_velocity_pressure
+    tauL = 0.5 + 3 * kin_visc_local
+
+    S_D2Q9 = jnp.ones(9)
+    S_D2Q9 = S_D2Q9.at[7].set(1.0 / tauL)
+    S_D2Q9 = S_D2Q9.at[8].set(1.0 / tauL)
+
+    force = interface_force / rho
+
+    force_eq = jnp.zeros(9)
+    force_eq = force_eq.at[3].set(force[0])
+    force_eq = force_eq.at[4].set(-force[0])
+    force_eq = force_eq.at[5].set(force[1])
+    force_eq = force_eq.at[6].set(-force[1])
+
+    mom_diff = mom - S_D2Q9 * (mom - mom_eq) + (force_eq - 0.5 * S_D2Q9 * force_eq)
+    N_new = jnp.einsum("kl,l->k", invM_D2Q9, mom_diff)
+    
+    # We will have to compute this to avoid divergence
+    return lax.select(obs, N_new[np.array([0, 3, 4, 1, 2, 7, 8, 5, 6])], N_new)

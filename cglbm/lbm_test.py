@@ -161,6 +161,7 @@ class LBMTest(absltest.TestCase):
 
         test_utils.benchmark("benchmark compute mom", init_fn, step_fn)
 
+
     def test_compute_viscosity_correction_perf(self):
         sys = test_utils.load_config("params.ini")
 
@@ -194,6 +195,43 @@ class LBMTest(absltest.TestCase):
             )
 
         test_utils.benchmark("benchmark compute viscosity correction", init_fn, step_fn)
+
+
+    def test_compute_collision_perf(self):
+        sys = test_utils.load_config("params.ini")
+
+        def init_fn(rng):
+            LX = sys.LX
+            LY = sys.LY
+            obs = jnp.zeros((LX, LY), dtype=bool)
+            rngs = jax.random.split(rng, 7)
+
+            return {
+                "invM_D2Q9": sys.invM_D2Q9,
+                "obs": obs,
+
+                "mom": jax.random.normal(rngs[1], (LX, LY, 9)),
+                "mom_eq": jax.random.normal(rngs[2], (LX, LY, 9)),
+                "kin_visc_local": jax.random.normal(rngs[3], (LX, LY)),
+                "interface_force": jax.random.normal(rngs[4], (LX, LY, 2)),
+                "rho": jax.random.normal(rngs[5], (LX, LY)),
+                "N": jax.random.normal(rngs[6], (9, LX, LY))
+            }
+
+        def step_fn(state):
+            return compute_collision(
+                state["invM_D2Q9"],
+                state["obs"],
+                state["mom"],
+                state["mom_eq"],
+                state["kin_visc_local"],
+                state["interface_force"],
+                state["rho"],
+                state["N"]
+            )
+
+        test_utils.benchmark("benchmark compute collision", init_fn, step_fn)
+
 
 if __name__ == "__main__":
     absltest.main()
