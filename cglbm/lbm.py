@@ -48,6 +48,7 @@ _eq_dist = vmap(eq_dist, in_axes=(None, None, None, 0, 0), out_axes=1)
 grid_eq_dist = jit(vmap(_eq_dist, in_axes=(None, None, None, 0, 0), out_axes=1))
 
 
+@jit
 def compute_phase_field(f: jax.Array):
     """
     f: (k, LX, LY,)
@@ -57,6 +58,7 @@ def compute_phase_field(f: jax.Array):
     return jnp.einsum("kij->ij", f)
 
 
+@jit
 def compute_dst_phase_field(cXs: jax.Array, cYs: jax.Array, phase_field: jax.Array):
     """
     cXs: (k,)
@@ -88,3 +90,46 @@ def compute_phi_grad(cXYs: jax.Array, weights: jax.Array, dst_phase_field: jax.A
     phi_grad = 3 * jnp.einsum("k,k,kx->x", weights, dst_phase_field, cXYs)
 
     return phi_grad
+
+
+@jit
+@partial(vmap, in_axes=(None, None, None, 0, 0, 0, 1), out_axes=0)
+@partial(vmap, in_axes=(None, None, None, 0, 0, 0, 1), out_axes=0)
+def compute_mom(
+    kin_visc_one: jnp.float32,
+    kin_visc_two: jnp.float32,
+    M_D2Q9: jax.Array,
+    u: jax.Array,
+    pressure: jax.Array,
+    phase_field: jax.Array,
+    N: jax.Array):
+    """
+    kin_visc_one: float32
+    kin_visc_two: float32
+    M_D2Q9: (k,k,)
+    u: (X,Y,2,)
+    pressure: (X,Y,)
+    phase_field: (X,Y,)
+    N: (k,X,Y)
+
+    return ((X,Y,k), (X,Y,k), (X,Y))
+    """
+    alpha = 4.0 / 9.0
+    u2 = u[0] * u[0] + u[1] * u[1]
+    mom_eq = jnp.array([1.0,
+                        -(2 + 18 * alpha) / 5.0 + 3.0 * (u2 + 2 * pressure),
+                        (-7.0 + 27 * alpha) / 5 - 3.0 * (u2 + 3 * pressure),
+                        u[0],
+                        -u[0],
+                        u[1],
+                        -u[1],
+                        u[0] * u[0] - u[1] * u[1],
+                        u[0] * u[1]])
+
+    inv_kin_visc = (phase_field / kin_visc_one) + \
+        (1 - phase_field) / kin_visc_two
+    kin_visc_local = inv_kin_visc
+
+    mom = jnp.einsum('kl,l->k', M_D2Q9, N)
+
+    return mom, mom_eq, kin_visc_local

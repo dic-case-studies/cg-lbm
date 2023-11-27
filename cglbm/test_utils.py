@@ -29,7 +29,11 @@ def benchmark(
     times = []
     for i in range(iter):
         t = time.time_ns() / 1000
-        fn(init_state).block_until_ready()
+        fn_call = fn(init_state)
+        if type(fn_call) == tuple:
+            fn_call[0].block_until_ready()
+        else:
+            fn_call.block_until_ready()
         times.append((time.time_ns() / 1000) - t)
     op_time = jnp.mean(jnp.array(times[1:]))
     op_time_std = jnp.std(jnp.array(times[1:]))

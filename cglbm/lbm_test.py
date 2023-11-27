@@ -3,8 +3,7 @@ from absl.testing import parameterized
 import jax
 from jax import numpy as jnp
 import cglbm.test_utils as test_utils
-from cglbm.lbm import eq_dist_phase_field, eq_dist, grid_eq_dist, compute_phase_field, \
-    compute_dst_phase_field, compute_phi_grad
+from cglbm.lbm import *
 
 
 class LBMTest(absltest.TestCase):
@@ -125,6 +124,42 @@ class LBMTest(absltest.TestCase):
 
         test_utils.benchmark("benchmark compute phi grad", init_fn, step_fn)
 
+
+    def test_compute_mom_perf(self):
+        sys = test_utils.load_config("params.ini")
+
+        def init_fn(rng):
+            LX = sys.LX
+            LY = sys.LY
+            rngs = jax.random.split(rng, 4)
+
+            phase_field = jax.random.normal(rngs[0], (LX, LY))
+            u = jax.random.normal(rngs[1], (LX, LY, 2))
+            pressure = jax.random.normal(rngs[2], (LX, LY))
+            N = jax.random.normal(rngs[3], (9, LX, LY))
+
+            return {
+                "kin_visc_one": sys.kin_visc_one,
+                "kin_visc_two": sys.kin_visc_two,
+                "M_D2Q9": sys.M_D2Q9,
+                "u": u,
+                "pressure": pressure,
+                "phase_field": phase_field,
+                "N": N
+            }
+        
+        def step_fn(state):
+            return compute_mom(
+                state["kin_visc_one"],
+                state["kin_visc_two"],
+                state["M_D2Q9"],
+                state["u"],
+                state["pressure"],
+                state["phase_field"],
+                state["N"]
+            )
+
+        test_utils.benchmark("benchmark compute mom", init_fn, step_fn)
 
 if __name__ == "__main__":
     absltest.main()
