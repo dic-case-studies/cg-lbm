@@ -125,6 +125,41 @@ class LBMTest(absltest.TestCase):
         test_utils.benchmark("benchmark compute phi grad", init_fn, step_fn)
 
 
+    def test_surface_tension_force_perf(self):
+        sys = test_utils.load_config("params.ini")
+
+        def init_fn(rng):
+            LX = sys.LX
+            LY = sys.LY
+        
+            rngs = jax.random.split(rng, 3)
+
+            phase_field = jax.random.normal(rngs[0], (LX, LY))
+            dst_phase_field = jax.random.normal(rngs[1], (9, LX, LY))
+            phi_grad = jax.random.normal(rngs[2], (LX, LY, 2))
+
+            return {
+                "surface_tension": sys.surface_tension,
+                "width": sys.width,
+                "weights": sys.weights,
+                "phase_field": phase_field,
+                "dst_phase_field": dst_phase_field,
+                "phi_grad": phi_grad,
+            }
+
+        def step_fn(state):
+            return surface_tension_force(
+                state["surface_tension"],
+                state["width"],
+                state["weights"],
+                state["phase_field"],
+                state["dst_phase_field"],
+                state["phi_grad"]
+                )
+
+        test_utils.benchmark("benchmark surface tension force", init_fn, step_fn)
+
+
     def test_compute_mom_perf(self):
         sys = test_utils.load_config("params.ini")
 
@@ -203,6 +238,7 @@ class LBMTest(absltest.TestCase):
         def init_fn(rng):
             LX = sys.LX
             LY = sys.LY
+            # TODO: Modify the way this is initialized, or set a well defined obstacle (wall, cylinder, etc)
             obs = jnp.zeros((LX, LY), dtype=bool)
             rngs = jax.random.split(rng, 7)
 
@@ -232,38 +268,40 @@ class LBMTest(absltest.TestCase):
 
         test_utils.benchmark("benchmark compute collision", init_fn, step_fn)
 
-    def test_surface_tension_force_perf(self):
+
+    def test_compute_propagation_perf(self):
         sys = test_utils.load_config("params.ini")
 
         def init_fn(rng):
             LX = sys.LX
             LY = sys.LY
+            obs = jnp.zeros((LX, LY), dtype=bool)
+            obs_velocity = jnp.zeros((LX, LY, 2))
             rngs = jax.random.split(rng, 3)
 
-            phase_field = jax.random.normal(rngs[0], (LX, LY))
-            dst_phase_field = jax.random.normal(rngs[1], (9, LX, LY))
-            phi_grad = jax.random.normal(rngs[2], (LX, LY, 2))
-
             return {
-                "surface_tension": sys.surface_tension,
-                "width": sys.width,
+                "cXs": sys.cXs,
+                "cYs": sys.cYs,
                 "weights": sys.weights,
-                "phase_field": phase_field,
-                "dst_phase_field": dst_phase_field,
-                "phi_grad": phi_grad,
+                "obs": obs,
+                "obs_velocity": obs_velocity,
+                "N_new": jax.random.normal(rngs[0], (9, LX, LY)),
+                "f_new": jax.random.normal(rngs[1], (9, LX, LY))
             }
 
         def step_fn(state):
-            return surface_tension_force(
-                state["surface_tension"],
-                state["width"],
+            return compute_propagation(
+                state["cXs"],
+                state["cYs"],
                 state["weights"],
-                state["phase_field"],
-                state["dst_phase_field"],
-                state["phi_grad"]
-                )
+                state["obs"],
+                state["obs_velocity"],
+                state["N_new"],
+                state["f_new"]
+            )
 
-        test_utils.benchmark("benchmark surface tension force", init_fn, step_fn)
+        test_utils.benchmark("benchmark compute propagation", init_fn, step_fn)
+
 
 if __name__ == "__main__":
     absltest.main()

@@ -93,6 +93,35 @@ def compute_phi_grad(cXYs: jax.Array, weights: jax.Array, dst_phase_field: jax.A
     return phi_grad
 
 
+@partial(vmap, in_axes=(None, None, None, 0, 1, 0), out_axes=0)
+@partial(vmap, in_axes=(None, None, None, 0, 1, 0), out_axes=0)
+def surface_tension_force(
+        surface_tension: jnp.float32,
+        width: jnp.float32,
+        weights: jax.Array,
+        phase_field: jax.Array,
+        dst_phase_field: jax.Array,
+        phi_grad: jax.Array):
+    """
+    surface_tension: ()
+    width: ()
+    weights: (k,)
+    phase_field: (X, Y,)
+    dst_phase_field: (k, X, Y,)
+    phi_grad: (X, Y, 2,)
+    """
+    phase_diff = dst_phase_field - phase_field
+    laplacian_loc = 6 * jnp.einsum("k,k", phase_diff, weights)
+
+    phase_term = (48 * phase_field * (1 - phase_field)
+                  * (0.5 - phase_field)) / width
+    phase_term -= (1.5 * width * laplacian_loc)
+
+    curvature_force = surface_tension * phase_term * phi_grad
+
+    return curvature_force
+
+
 @jit
 @partial(vmap, in_axes=(None, None, None, 0, 0, 0, 1), out_axes=0)
 @partial(vmap, in_axes=(None, None, None, 0, 0, 0, 1), out_axes=0)
@@ -140,14 +169,14 @@ def compute_mom(
 @partial(vmap, in_axes=(None, None, None, None, 0, 0, 0, 0), out_axes=0)
 @partial(vmap, in_axes=(None, None, None, None, 0, 0, 0, 0), out_axes=0)
 def compute_viscosity_correction(
-    invM_D2Q9,
-    cMs,
-    density_one,
-    density_two,
-    phi_grad,
-    kin_visc_local,
-    mom,
-    mom_eq):
+    invM_D2Q9: jax.Array,
+    cMs: jax.Array,
+    density_one: jnp.float32,
+    density_two: jnp.float32,
+    phi_grad: jax.Array,
+    kin_visc_local: jax.Array,
+    mom: jax.Array,
+    mom_eq: jax.Array):
     """
     invM_D2Q9: (k,k,)
     cMs: (k,k,)
@@ -180,14 +209,14 @@ def compute_viscosity_correction(
 @partial(vmap, in_axes=(None, 0, 0, 0, 0, 0, 0, 1), out_axes=1)
 @partial(vmap, in_axes=(None, 0, 0, 0, 0, 0, 0, 1), out_axes=1)
 def compute_collision(
-    invM_D2Q9,
-    obs,
-    mom,
-    mom_eq,
-    kin_visc_local,
-    interface_force,
-    rho,
-    N 
+    invM_D2Q9: jax.Array,
+    obs: jax.Array,
+    mom: jax.Array,
+    mom_eq: jax.Array,
+    kin_visc_local: jax.Array,
+    interface_force: jax.Array,
+    rho: jax.Array,
+    N: jax.Array
 ):
     """
     invM_D2Q9: (k,k,)
@@ -222,30 +251,70 @@ def compute_collision(
     
     # We will have to compute this to avoid divergence
     return lax.select(obs, N_new[np.array([0, 3, 4, 1, 2, 7, 8, 5, 6])], N_new)
-@partial(vmap, in_axes=(None, None, None, 0, 1, 0), out_axes=0)
-@partial(vmap, in_axes=(None, None, None, 0, 1, 0), out_axes=0)
-def surface_tension_force(
-        surface_tension: jnp.float32,
-        width: jnp.float32,
-        weights: jax.Array,
-        phase_field: jax.Array,
-        dst_phase_field: jax.Array,
-        phi_grad: jax.Array):
+
+
+@partial(vmap, in_axes=(None, None, None, 0, 0, 1, 1, 1, 1), out_axes=1)
+@partial(vmap, in_axes=(None, None, None, 0, 0, 1, 1, 1, 1), out_axes=1)
+def handle_obstacle(
+    cXs: jax.Array,
+    cYs: jax.Array,
+    weights: jax.Array,
+    obs: jax.Array,
+    obsVel: jax.Array,
+    f_new: jax.Array,
+    f_new_dst: jax.Array,
+    N_new: jax.Array,
+    N_new_dst: jax.Array
+):
     """
-    surface_tension: ()
-    width: ()
+    cXs: (k,)
+    cYs: (k,)
     weights: (k,)
-    phase_field: (X, Y,)
-    dst_phase_field: (k, X, Y,)
-    phi_grad: (X, Y, 2,)
+    obs: (X, Y)
+    obsVel: (X, Y, 2,)
+    f_new: (k, X, Y,)
+    f_new_dst: (k, X, Y,)
+    N_new: (k, X, Y,)
+    N_new_dst: (k, X, Y,)
+
+    return: ((k, X, Y,), (k, X, Y,))
     """
-    phase_diff = dst_phase_field - phase_field
-    laplacian_loc = 6 * jnp.einsum("k,k", phase_diff, weights)
+    N_invert = N_new[np.array([0, 3, 4, 1, 2, 7, 8, 5, 6])] * 6.0 * weights * (cXs * obsVel[0] + cYs * obsVel[1])
+    f_invert = f_new[np.array([0, 3, 4, 1, 2, 7, 8, 5, 6])]
 
-    phase_term = (48 * phase_field * (1 - phase_field)
-                  * (0.5 - phase_field)) / width
-    phase_term -= (1.5 * width * laplacian_loc)
+    f = lax.select(obs, f_invert, f_new_dst)
+    N = lax.select(obs, N_invert, N_new_dst)
+    return N, f
 
-    curvature_force = surface_tension * phase_term * phi_grad
 
-    return curvature_force
+@jit
+def compute_propagation(
+    cXs: jax.Array,
+    cYs: jax.Array,
+    weights: jax.Array,
+    obs: jax.Array,
+    obsVel: jax.Array,
+    N_new: jax.Array,
+    f_new: jax.Array
+):
+    """
+    cXs: (k,)
+    cYs: (k,)
+    weights: (k,)
+    obs: (X, Y)
+    obsVel: (X, Y, 2,)
+    N_new: (k, X, Y,)
+    f_new: (k, X, Y,)
+
+    return: ((k, X, Y,), (k, X, Y,))
+    """
+    N = []
+    f = []
+    for i, cx, cy in zip(jnp.arange(9), cXs, cYs):
+        N.append(jnp.roll(N_new[i], (-cx, -cy), axis=(0, 1)))
+        f.append(jnp.roll(f_new[i], (-cx, -cy), axis=(0, 1)))
+
+    N_dst = jnp.stack(N)
+    f_dst = jnp.stack(f)
+
+    return handle_obstacle(cXs, cYs, weights, obs, obsVel, f_new, f_dst, N_new, N_dst)
