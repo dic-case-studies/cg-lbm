@@ -232,6 +232,38 @@ class LBMTest(absltest.TestCase):
 
         test_utils.benchmark("benchmark compute collision", init_fn, step_fn)
 
+    def test_surface_tension_force_perf(self):
+        sys = test_utils.load_config("params.ini")
+
+        def init_fn(rng):
+            LX = sys.LX
+            LY = sys.LY
+            rngs = jax.random.split(rng, 3)
+
+            phase_field = jax.random.normal(rngs[0], (LX, LY))
+            dst_phase_field = jax.random.normal(rngs[1], (9, LX, LY))
+            phi_grad = jax.random.normal(rngs[2], (LX, LY, 2))
+
+            return {
+                "surface_tension": sys.surface_tension,
+                "width": sys.width,
+                "weights": sys.weights,
+                "phase_field": phase_field,
+                "dst_phase_field": dst_phase_field,
+                "phi_grad": phi_grad,
+            }
+
+        def step_fn(state):
+            return surface_tension_force(
+                state["surface_tension"],
+                state["width"],
+                state["weights"],
+                state["phase_field"],
+                state["dst_phase_field"],
+                state["phi_grad"]
+                )
+
+        test_utils.benchmark("benchmark surface tension force", init_fn, step_fn)
 
 if __name__ == "__main__":
     absltest.main()

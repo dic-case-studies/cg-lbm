@@ -222,3 +222,30 @@ def compute_collision(
     
     # We will have to compute this to avoid divergence
     return lax.select(obs, N_new[np.array([0, 3, 4, 1, 2, 7, 8, 5, 6])], N_new)
+@partial(vmap, in_axes=(None, None, None, 0, 1, 0), out_axes=0)
+@partial(vmap, in_axes=(None, None, None, 0, 1, 0), out_axes=0)
+def surface_tension_force(
+        surface_tension: jnp.float32,
+        width: jnp.float32,
+        weights: jax.Array,
+        phase_field: jax.Array,
+        dst_phase_field: jax.Array,
+        phi_grad: jax.Array):
+    """
+    surface_tension: ()
+    width: ()
+    weights: (k,)
+    phase_field: (X, Y,)
+    dst_phase_field: (k, X, Y,)
+    phi_grad: (X, Y, 2,)
+    """
+    phase_diff = dst_phase_field - phase_field
+    laplacian_loc = 6 * jnp.einsum("k,k", phase_diff, weights)
+
+    phase_term = (48 * phase_field * (1 - phase_field)
+                  * (0.5 - phase_field)) / width
+    phase_term -= (1.5 * width * laplacian_loc)
+
+    curvature_force = surface_tension * phase_term * phi_grad
+
+    return curvature_force
