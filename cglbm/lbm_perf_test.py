@@ -6,17 +6,17 @@ import cglbm.test_utils as test_utils
 from cglbm.lbm import *
 
 
-class LBMTest(absltest.TestCase):
-    """Performance test for LBM Methods
+class LBMPerfTest(absltest.TestCase):
+    """Performance tests for LBM Methods
     Note:These are for reference actual numbers will go down after fusion
     """
 
-    def test_eq_dist_phase_field_perf(self):
-        sys = test_utils.load_config("params.ini")
+    def test_perf_eq_dist_phase_field(self):
+        system = test_utils.load_config("params.ini")
 
         def init_fn(rng):
-            LX = sys.LX
-            LY = sys.LY
+            LX = system.LX
+            LY = system.LY
             rng1, rng2 = jax.random.split(rng, 2)
             phi = jax.random.normal(rng1, (LX, LY))
             u = jax.random.normal(rng2, (LX, LY, 2))
@@ -26,17 +26,17 @@ class LBMTest(absltest.TestCase):
             }
 
         def step_fn(state):
-            return eq_dist_phase_field(sys.cXYs, sys.weights, state["phi"], state["u"])
+            return eq_dist_phase_field(system.cXYs, system.weights, state["phi"], state["u"])
 
         test_utils.benchmark("benchmark eq dist phase field", init_fn, step_fn)
 
     
-    def test_grid_eq_dist_perf(self):
-        sys = test_utils.load_config("params.ini")
+    def test_perf_grid_eq_dist(self):
+        system = test_utils.load_config("params.ini")
 
         def init_fn(rng):
-            LX = sys.LX
-            LY = sys.LY
+            LX = system.LX
+            LY = system.LY
             rng1, rng2 = jax.random.split(rng, 2)
             phi = jax.random.normal(rng1, (LX, LY))
             u = jax.random.normal(rng2, (LX, LY, 2))
@@ -46,17 +46,17 @@ class LBMTest(absltest.TestCase):
             }
 
         def step_fn(state):
-            return grid_eq_dist(sys.cXYs, sys.weights, sys.phi_weights, state["phi"], state["u"])
+            return grid_eq_dist(system.cXYs, system.weights, system.phi_weights, state["phi"], state["u"])
 
         test_utils.benchmark("benchmark grid eq dist", init_fn, step_fn)
 
     
-    def test_eq_dist_perf(self):
-        sys = test_utils.load_config("params.ini")
+    def test_perf_eq_dist(self):
+        system = test_utils.load_config("params.ini")
 
         def init_fn(rng):
-            LX = sys.LX
-            LY = sys.LY
+            LX = system.LX
+            LY = system.LY
             rng1, rng2 = jax.random.split(rng, 2)
             phi = jax.random.normal(rng1, (1,))
             u = jax.random.normal(rng2, (2,))
@@ -66,17 +66,17 @@ class LBMTest(absltest.TestCase):
             }
 
         def step_fn(state):
-            return eq_dist(sys.cXYs, sys.weights, sys.phi_weights, state["phi"], state["u"])
+            return eq_dist(system.cXYs, system.weights, system.phi_weights, state["phi"], state["u"])
 
         test_utils.benchmark("benchmark eq dist", init_fn, step_fn)
 
 
-    def test_compute_phase_field_perf(self):
-        sys = test_utils.load_config("params.ini")
+    def test_perf_compute_phase_field(self):
+        system = test_utils.load_config("params.ini")
 
         def init_fn(rng):
-            LX = sys.LX
-            LY = sys.LY
+            LX = system.LX
+            LY = system.LY
             rng1, _ = jax.random.split(rng, 2)
             f = jax.random.normal(rng1, (9, LX, LY))
             return {
@@ -89,12 +89,12 @@ class LBMTest(absltest.TestCase):
         test_utils.benchmark("benchmark compute phase field", init_fn, step_fn)
 
 
-    def test_compute_dst_phase_field_perf(self):
-        sys = test_utils.load_config("params.ini")
+    def test_perf_compute_dst_phase_field(self):
+        system = test_utils.load_config("params.ini")
 
         def init_fn(rng):
-            LX = sys.LX
-            LY = sys.LY
+            LX = system.LX
+            LY = system.LY
             rng1, _ = jax.random.split(rng, 2)
             phi = jax.random.normal(rng1, (LX, LY))
             return {
@@ -102,17 +102,17 @@ class LBMTest(absltest.TestCase):
             }
 
         def step_fn(state):
-            return compute_dst_phase_field(sys.cXs, sys.cYs, state["phi"])
+            return compute_dst_phase_field(system.cXs, system.cYs, state["phi"])
 
         test_utils.benchmark("benchmark compute dst phase field", init_fn, step_fn)
 
 
-    def test_compute_phi_grad_perf(self):
-        sys = test_utils.load_config("params.ini")
+    def test_perf_compute_phi_grad(self):
+        system = test_utils.load_config("params.ini")
 
         def init_fn(rng):
-            LX = sys.LX
-            LY = sys.LY
+            LX = system.LX
+            LY = system.LY
             rng1, _ = jax.random.split(rng, 2)
             dst_phase_field = jax.random.normal(rng1, (9, LX, LY))
             return {
@@ -120,17 +120,17 @@ class LBMTest(absltest.TestCase):
             }
 
         def step_fn(state):
-            return compute_phi_grad(sys.cXYs, sys.weights, state["dst_phase_field"])
+            return compute_phi_grad(system.cXYs, system.weights, state["dst_phase_field"])
 
         test_utils.benchmark("benchmark compute phi grad", init_fn, step_fn)
 
 
-    def test_surface_tension_force_perf(self):
-        sys = test_utils.load_config("params.ini")
+    def test_perf_surface_tension_force(self):
+        system = test_utils.load_config("params.ini")
 
         def init_fn(rng):
-            LX = sys.LX
-            LY = sys.LY
+            LX = system.LX
+            LY = system.LY
         
             rngs = jax.random.split(rng, 3)
 
@@ -139,9 +139,9 @@ class LBMTest(absltest.TestCase):
             phi_grad = jax.random.normal(rngs[2], (LX, LY, 2))
 
             return {
-                "surface_tension": sys.surface_tension,
-                "width": sys.width,
-                "weights": sys.weights,
+                "surface_tension": system.surface_tension,
+                "width": system.width,
+                "weights": system.weights,
                 "phase_field": phase_field,
                 "dst_phase_field": dst_phase_field,
                 "phi_grad": phi_grad,
@@ -160,12 +160,12 @@ class LBMTest(absltest.TestCase):
         test_utils.benchmark("benchmark surface tension force", init_fn, step_fn)
 
 
-    def test_compute_mom_perf(self):
-        sys = test_utils.load_config("params.ini")
+    def test_perf_compute_mom(self):
+        system = test_utils.load_config("params.ini")
 
         def init_fn(rng):
-            LX = sys.LX
-            LY = sys.LY
+            LX = system.LX
+            LY = system.LY
             rngs = jax.random.split(rng, 4)
 
             phase_field = jax.random.normal(rngs[0], (LX, LY))
@@ -174,9 +174,9 @@ class LBMTest(absltest.TestCase):
             N = jax.random.normal(rngs[3], (9, LX, LY))
 
             return {
-                "kin_visc_one": sys.kin_visc_one,
-                "kin_visc_two": sys.kin_visc_two,
-                "M_D2Q9": sys.M_D2Q9,
+                "kin_visc_one": system.kin_visc_one,
+                "kin_visc_two": system.kin_visc_two,
+                "M_D2Q9": system.M_D2Q9,
                 "u": u,
                 "pressure": pressure,
                 "phase_field": phase_field,
@@ -197,19 +197,19 @@ class LBMTest(absltest.TestCase):
         test_utils.benchmark("benchmark compute mom", init_fn, step_fn)
 
 
-    def test_compute_viscosity_correction_perf(self):
-        sys = test_utils.load_config("params.ini")
+    def test_perf_compute_viscosity_correction(self):
+        system = test_utils.load_config("params.ini")
 
         def init_fn(rng):
-            LX = sys.LX
-            LY = sys.LY
+            LX = system.LX
+            LY = system.LY
             rngs = jax.random.split(rng, 5)
 
             return {
-                "invM_D2Q9": sys.invM_D2Q9,
-                "cMs": sys.cMs,
-                "density_one": sys.density_one,
-                "density_two": sys.density_two,
+                "invM_D2Q9": system.invM_D2Q9,
+                "cMs": system.cMs,
+                "density_one": system.density_one,
+                "density_two": system.density_two,
 
                 "phi_grad": jax.random.normal(rngs[0], (LX, LY, 2)),
                 "kin_visc_local": jax.random.normal(rngs[1], (LX, LY)),
@@ -232,18 +232,18 @@ class LBMTest(absltest.TestCase):
         test_utils.benchmark("benchmark compute viscosity correction", init_fn, step_fn)
 
 
-    def test_compute_collision_perf(self):
-        sys = test_utils.load_config("params.ini")
+    def test_perf_compute_collision(self):
+        system = test_utils.load_config("params.ini")
 
         def init_fn(rng):
-            LX = sys.LX
-            LY = sys.LY
+            LX = system.LX
+            LY = system.LY
             # TODO: Modify the way this is initialized, or set a well defined obstacle (wall, cylinder, etc)
             obs = jnp.zeros((LX, LY), dtype=bool)
             rngs = jax.random.split(rng, 7)
 
             return {
-                "invM_D2Q9": sys.invM_D2Q9,
+                "invM_D2Q9": system.invM_D2Q9,
                 "obs": obs,
 
                 "mom": jax.random.normal(rngs[1], (LX, LY, 9)),
@@ -269,20 +269,20 @@ class LBMTest(absltest.TestCase):
         test_utils.benchmark("benchmark compute collision", init_fn, step_fn)
 
 
-    def test_compute_propagation_perf(self):
-        sys = test_utils.load_config("params.ini")
+    def test_perf_compute_propagation(self):
+        system = test_utils.load_config("params.ini")
 
         def init_fn(rng):
-            LX = sys.LX
-            LY = sys.LY
+            LX = system.LX
+            LY = system.LY
             obs = jnp.zeros((LX, LY), dtype=bool)
             obs_velocity = jnp.zeros((LX, LY, 2))
             rngs = jax.random.split(rng, 3)
 
             return {
-                "cXs": sys.cXs,
-                "cYs": sys.cYs,
-                "weights": sys.weights,
+                "cXs": system.cXs,
+                "cYs": system.cYs,
+                "weights": system.weights,
                 "obs": obs,
                 "obs_velocity": obs_velocity,
                 "N_new": jax.random.normal(rngs[0], (9, LX, LY)),
