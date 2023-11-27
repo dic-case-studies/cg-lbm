@@ -86,13 +86,14 @@ def compute_phi_grad(cXYs: jax.Array, weights: jax.Array, dst_phase_field: jax.A
     weights: (k,)
     dst_phase_field: (k, LX, LY,)
 
-    return: (LX, LY, 2)
+    return: (LX, LY, 2,)
     """
     phi_grad = 3 * jnp.einsum("k,k,kx->x", weights, dst_phase_field, cXYs)
 
     return phi_grad
 
 
+@jit
 @partial(vmap, in_axes=(None, None, None, 0, 1, 0), out_axes=0)
 @partial(vmap, in_axes=(None, None, None, 0, 1, 0), out_axes=0)
 def surface_tension_force(
@@ -109,6 +110,8 @@ def surface_tension_force(
     phase_field: (X, Y,)
     dst_phase_field: (k, X, Y,)
     phi_grad: (X, Y, 2,)
+
+    return: (X, Y, 2,)
     """
     phase_diff = dst_phase_field - phase_field
     laplacian_loc = 6 * jnp.einsum("k,k", phase_diff, weights)
@@ -253,6 +256,7 @@ def compute_collision(
     return lax.select(obs, N_new[np.array([0, 3, 4, 1, 2, 7, 8, 5, 6])], N_new)
 
 
+@jit
 @partial(vmap, in_axes=(None, None, None, 0, 0, 1, 1, 1, 1), out_axes=1)
 @partial(vmap, in_axes=(None, None, None, 0, 0, 1, 1, 1, 1), out_axes=1)
 def handle_obstacle(
