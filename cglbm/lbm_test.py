@@ -161,6 +161,40 @@ class LBMTest(absltest.TestCase):
 
         test_utils.benchmark("benchmark compute mom", init_fn, step_fn)
 
+    def test_compute_viscosity_correction_perf(self):
+        sys = test_utils.load_config("params.ini")
+
+        def init_fn(rng):
+            LX = sys.LX
+            LY = sys.LY
+            rngs = jax.random.split(rng, 5)
+
+            return {
+                "invM_D2Q9": sys.invM_D2Q9,
+                "cMs": sys.cMs,
+                "density_one": sys.density_one,
+                "density_two": sys.density_two,
+
+                "phi_grad": jax.random.normal(rngs[0], (LX, LY, 2)),
+                "kin_visc_local": jax.random.normal(rngs[1], (LX, LY)),
+                "mom": jax.random.normal(rngs[2], (LX, LY, 9)),
+                "mom_eq": jax.random.normal(rngs[3], (LX, LY, 9)),
+            }
+
+        def step_fn(state):
+            return compute_viscosity_correction(
+                state["invM_D2Q9"],
+                state["cMs"],
+                state["density_one"],
+                state["density_two"],
+                state["phi_grad"],
+                state["kin_visc_local"],
+                state["mom"],
+                state["mom_eq"]
+            )
+
+        test_utils.benchmark("benchmark compute viscosity correction", init_fn, step_fn)
+
 if __name__ == "__main__":
     absltest.main()
 

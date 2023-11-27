@@ -133,3 +133,32 @@ def compute_mom(
     mom = jnp.einsum('kl,l->k', M_D2Q9, N)
 
     return mom, mom_eq, kin_visc_local
+
+
+@jit
+@partial(vmap, in_axes=(None, None, None, None, 0, 0, 0, 0), out_axes=0)
+@partial(vmap, in_axes=(None, None, None, None, 0, 0, 0, 0), out_axes=0)
+def compute_viscosity_correction(
+    invM_D2Q9,
+    cMs,
+    density_one,
+    density_two,
+    phi_grad,
+    kin_visc_local,
+    mom,
+    mom_eq):
+
+    tauL = 0.5 + 3 * kin_visc_local
+
+    S_D2Q9 = jnp.ones(9)
+    S_D2Q9 = S_D2Q9.at[7].set(1.0 / tauL)
+    S_D2Q9 = S_D2Q9.at[8].set(1.0 / tauL)
+
+    mom_diff = jnp.einsum(
+        'kl,l,l->k', invM_D2Q9, S_D2Q9, (mom - mom_eq))
+
+    viscous_force = -3.0 * kin_visc_local * \
+        (density_one - density_two) * \
+        jnp.einsum('kmn, k, n -> m',  cMs, mom_diff, phi_grad)
+
+    return viscous_force
