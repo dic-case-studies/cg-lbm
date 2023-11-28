@@ -1,5 +1,4 @@
 from absl.testing import absltest
-from absl.testing import parameterized
 import jax
 from jax import numpy as jnp
 import cglbm.test_utils as test_utils
