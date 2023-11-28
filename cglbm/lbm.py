@@ -339,6 +339,64 @@ def compute_total_force(
     curvature_force: (X, Y, 2,)
     viscous_force: (X, Y,)
     rho: (X, Y,)
+
+    return: (X, Y, 2,)
     """
     rest_force = jnp.stack([rho* gravityX, rho * gravityY])
     return rest_force + curvature_force + viscous_force
+
+
+@jit
+@partial(vmap, in_axes=(None, None, None, None, None, None, 0, 0, 0, 1, 0), out_axes=0)
+@partial(vmap, in_axes=(None, None, None, None, None, None, 0, 0, 0, 1, 0), out_axes=0)
+def compute_density_velocity_pressure(
+        density_one: jnp.float32,
+        density_two: jnp.float32,
+        cXs: jax.Array,
+        cYs: jax.Array,
+        weights: jax.Array,
+        phi_weights: jax.Array,
+        pressure: jax.Array,
+        phase_field: jax.Array,
+        phi_grad: jax.Array,
+        N: jax.Array,
+        total_force: jax.Array):
+    """
+    density_one: ()
+    density_two: ()
+    cXs: (k,)
+    cYs: (k,)
+    weights: (k,)
+    phi_weights: (k,)
+    pressure: (X, Y,)
+    phase_field: (X, Y,)
+    phi_grad: (X, Y, 2,)
+    N: (k, X, Y,)
+    total_force: (X, Y, 2,)
+
+    return: (X, Y,), (X, Y, 2), (X, Y,), (X, Y, 2,)
+    """
+
+    # TODO: This function is supposed to happen when obstacle != 1
+
+    sumNX = jnp.dot(N, cXs)
+    sumNY = jnp.dot(N, cYs)
+    sumNV = jnp.stack([sumNX, sumNY])
+
+    sumN = jnp.sum(N)
+
+    rho = density_one * phase_field + \
+        density_two * (1 - phase_field)
+
+    # TODO: There was a for loop here is it really needed?
+    u = sumNV + total_force - \
+        (pressure * (density_one - density_two) * phi_grad) / rho
+    usq = jnp.sum(jnp.square(u))
+
+    pressure = (sumN / 3.0 - weights[0] * usq * 0.5 -
+                (1 - phi_weights[0]) / 3.0) / (1 - weights[0])
+
+    interface_force = total_force - pressure * \
+        (density_one - density_two) * phi_grad
+
+    return rho, u, pressure, interface_force

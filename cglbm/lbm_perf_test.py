@@ -333,6 +333,46 @@ class LBMPerfTest(absltest.TestCase):
 
         test_utils.benchmark("benchmark compute total force", init_fn, step_fn)
 
+
+    def test_perf_compute_density_velocity_pressure(self):
+        system = test_utils.load_config("params.ini")
+
+        def init_fn(rng):
+            LX = system.LX
+            LY = system.LY
+            rngs = jax.random.split(rng, 5)
+
+            return {
+                "density_one": system.density_one,
+                "density_two": system.density_two,
+                "cXs": system.cXs,
+                "cYs": system.cYs,
+                "weights": system.weights,
+                "phi_weights": system.phi_weights,
+                "pressure": jax.random.normal(rngs[0], (LX, LY)),
+                "phase_field": jax.random.normal(rngs[1], (LX, LY)),
+                "phi_grad": jax.random.normal(rngs[2], (LX, LY, 2)),
+                "N": jax.random.normal(rngs[3], (9, LX, LY)),
+                "total_force": jax.random.normal(rngs[4], (LX, LY, 2))
+            }
+
+        def step_fn(state):
+            return compute_density_velocity_pressure(
+                state["density_one"],
+                state["density_two"],
+                state["cXs"],
+                state["cYs"],
+                state["weights"],
+                state["phi_weights"],
+                state["pressure"],
+                state["phase_field"],
+                state["phi_grad"],
+                state["N"],
+                state["total_force"]
+            )
+
+        test_utils.benchmark("benchmark compute density velocity pressure", init_fn, step_fn)
+
 if __name__ == "__main__":
     absltest.main()
 
