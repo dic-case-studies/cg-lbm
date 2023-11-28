@@ -400,3 +400,43 @@ def compute_density_velocity_pressure(
         (density_one - density_two) * phi_grad
 
     return rho, u, pressure, interface_force
+
+
+@jit
+@partial(vmap, in_axes=(None, None, None, None, 0, 0, 0, 0, 1), out_axes=1)
+@partial(vmap, in_axes=(None, None, None, None, 0, 0, 0, 0, 1), out_axes=1)
+def compute_segregation(
+    width: jnp.float32,
+    cXYs: jax.Array,
+    weights: jax.Array,
+    phi_weights: jax.Array,
+    phase_field: jax.Array,
+    phi_grad: jax.Array,
+    pressure: jax.Array,
+    u: jax.Array,
+    N_new: jax.Array
+):
+    """
+    width: ()
+    cXYs: (k, 2,)
+    weights: (k,)
+    phi_weights: (k,)
+    phase_field: (X, Y,)
+    phi_grad: (X, Y, 2,)
+    pressure: (X, Y,)
+    u: (X, Y, 2,)
+    N_new: (k, X, Y,)
+    """
+    phi_mag = jnp.sqrt(jnp.sum(jnp.square(phi_grad)))
+
+    # (phigrad_dot_c / phi_mag) is nan for non interface region
+
+    # [k]
+    N_eq = eq_dist(cXYs, weights, phi_weights, pressure, u)
+    # 9, 2
+    phigrad_dot_c = jnp.sum(phi_grad * cXYs, axis=1)
+    seg_term = (2.0 / width) * (1.0 - phase_field) * \
+        phase_field * (phigrad_dot_c / phi_mag) * N_eq
+
+    f_new = phase_field * N_new + seg_term
+    return f_new

@@ -373,6 +373,43 @@ class LBMPerfTest(absltest.TestCase):
 
         test_utils.benchmark("benchmark compute density velocity pressure", init_fn, step_fn)
 
+
+    def test_perf_compute_segregation(self):
+        system = test_utils.load_config("params.ini")
+
+        def init_fn(rng):
+            LX = system.LX
+            LY = system.LY
+            rngs = jax.random.split(rng, 5)
+
+            return {
+                "width": system.width,
+                "cXYs": system.cXYs,
+                "weights": system.weights,
+                "phi_weights": system.phi_weights,
+                "phase_field": jax.random.normal(rngs[0], (LX, LY)),
+                "phi_grad": jax.random.normal(rngs[1], (LX, LY, 2)),
+                "pressure": jax.random.normal(rngs[2], (LX, LY)),
+                "u": jax.random.normal(rngs[3], (LX, LY, 2)),
+                "N_new": jax.random.normal(rngs[4], (9, LX, LY)),
+            }
+
+        def step_fn(state):
+            return compute_segregation(
+                state["width"],
+                state["cXYs"],
+                state["weights"],
+                state["phi_weights"],
+                state["phase_field"],
+                state["phi_grad"],
+                state["pressure"],
+                state["u"],
+                state["N_new"],
+            )
+
+        test_utils.benchmark("benchmark compute segregation", init_fn, step_fn)
+
+
 if __name__ == "__main__":
     absltest.main()
 
