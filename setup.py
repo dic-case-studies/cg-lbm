@@ -22,8 +22,9 @@ setup(
         "jax",
         "jaxlib",
         "numpy",
-        "eutils"
-        # TODO: Add meshio
+        "eutils",
+        "meshio",
+        "h5py"
     ],
     extras_require={
         "develop": ["pytest"],
