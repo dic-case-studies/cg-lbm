@@ -396,7 +396,7 @@ def compute_segregation(
     Returns:
         f_new: (k, X, Y,)
     """
-    phi_mag = jnp.sqrt(jnp.sum(jnp.square(phi_grad)))
+    phi_mag = jnp.sqrt(jnp.sum(jnp.square(phi_grad))) + jnp.finfo(jnp.float32).eps
 
     # (phigrad_dot_c / phi_mag) is nan for non interface region
 
