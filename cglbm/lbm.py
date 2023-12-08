@@ -40,7 +40,7 @@ def eq_dist(cXYs, weights, phi_weights, pressure, u):
     cu = jnp.sum(u * cXYs)
     u2 = jnp.sum(jnp.square(u))
 
-    neq_common_term = phi_weights + (weights + 3.0 * pressure) - (weights * u2 * 1.5)
+    neq_common_term = phi_weights + (weights * 3.0 * pressure) - (weights * u2 * 1.5)
     neq_k_zero_term = -3.0 * pressure
     neq_k_nonzero_term = weights * (3.0 * cu + 4.5 * cu * cu)
 
