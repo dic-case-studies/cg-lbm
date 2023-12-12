@@ -24,7 +24,8 @@ setup(
         "numpy",
         "eutils",
         "meshio",
-        "h5py"
+        "h5py",
+        "pandas"
     ],
     extras_require={
         "develop": ["pytest"],

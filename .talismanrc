@@ -1,4 +1,8 @@
 fileignoreconfig:
+- filename: cglbm/test-data/compute_phase_field_input.csv
+  checksum: 24e1383dbf59903992516dc6562113356825e8a8e171452df6f7d98b4def85f7
+- filename: cglbm/test-data/compute_phase_field_output.csv
+  checksum: e613558286189b5d482b4b8362172a32c32e9b78e4f7469b4821ffc076b8d645
 - filename: cglbm/test-data/compute_phi_grad_input.csv
   checksum: eaf1dba212bec5d42ff0e970a0e0c0e6f125901c5ff15672a6f3c5687dbbf72c
 - filename: cglbm/test-data/compute_phi_grad_output.csv
