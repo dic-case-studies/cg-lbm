@@ -1,0 +1,10 @@
+fileignoreconfig:
+- filename: cglbm/test-data/compute_phi_grad_input.csv
+  checksum: eaf1dba212bec5d42ff0e970a0e0c0e6f125901c5ff15672a6f3c5687dbbf72c
+- filename: cglbm/test-data/compute_phi_grad_output.csv
+  checksum: c450018302954be125496cbe440c4fc064959eb89e2ffe792b2730d009e0a157
+- filename: cglbm/test-data/eq_dist_output.csv
+  checksum: 35f3354df2f8b3eef1e5217c6e5d126d728d001e7f31043be4c87a01018e766b
+- filename: notebooks/Color Gradient Lattice Boltzman Method.ipynb
+  checksum: 7fb1a2201c2754571fb3799b10ebd3692b5abda9ff869740f345eefe2e8e6221
+version: "1.0"
