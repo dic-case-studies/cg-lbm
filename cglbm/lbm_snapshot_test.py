@@ -110,6 +110,34 @@ class LBMSnapshotTest(absltest.TestCase):
 
         self.assertTrue(np.allclose(actual, expected))
 
+    def test_compute_mom(self):
+        # Note: this is failing, have to analyse why
+        system = test_utils.load_config("params.ini")
+
+        input_2d_path = epath.resource_path("cglbm") / f'test-data/compute_mom_input_2d.csv'
+        input_3d_path = epath.resource_path("cglbm") / f'test-data/compute_mom_input_3d.csv'
+        expected_2d_path = epath.resource_path("cglbm") / f'test-data/compute_mom_output_2d.csv'
+        expected_3d_path = epath.resource_path("cglbm") / f'test-data/compute_mom_output_3d.csv'
+
+        phase_field, ux, uy, pressure = jnp.array(pd.read_csv(input_2d_path)[["phase_field", "ux", "uy", "pressure"]].to_numpy())\
+            .transpose().reshape(4, system.LX, system.LY)
+        u = jnp.stack([ux, uy]).transpose(1, 2, 0)
+        N = jnp.array(pd.read_csv(input_3d_path)["N"].to_numpy()).reshape(system.LX, system.LY, system.NL)\
+            .transpose(2, 0, 1)
+
+        expected_mom, expected_mom_eq = np.array(pd.read_csv(expected_3d_path)[["mom", "mom_eq"]].to_numpy())\
+            .transpose().reshape(2, system.LX, system.LY, system.NL)
+        expected_kin_visc_local = np.array(pd.read_csv(expected_2d_path)[["kin_visc_local"]].to_numpy())\
+            .reshape(system.LX, system.LY)
+
+        actual_d = compute_mom(system.kin_visc_one, system.kin_visc_two, system.M_D2Q9, u, pressure, phase_field, N)
+        actual = jax.device_get(actual_d)
+
+        self.assertTrue(np.allclose(actual[0], expected_mom))
+        self.assertTrue(np.allclose(actual[1], expected_mom_eq))
+        self.assertTrue(np.allclose(actual[2], expected_kin_visc_local))
+
+
 
 if __name__ == "__main__":
     # jax.config.update("jax_enable_x64", True)
