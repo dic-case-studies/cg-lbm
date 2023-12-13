@@ -147,7 +147,7 @@ class LBMPerfTest(absltest.TestCase):
             }
 
         def step_fn(state):
-            return surface_tension_force(
+            return compute_surface_tension_force(
                 state["surface_tension"],
                 state["width"],
                 state["weights"],

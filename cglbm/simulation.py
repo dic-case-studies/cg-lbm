@@ -21,7 +21,7 @@ def simulation_step(system: System, state: State, idx: int) -> State:
 
     phi_grad = compute_phi_grad(system.cXYs, system.weights, dst_phase_field)
 
-    curvature_force = surface_tension_force(
+    curvature_force = compute_surface_tension_force(
         system.surface_tension,
         system.width,
         system.weights,

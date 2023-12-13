@@ -107,7 +107,7 @@ def compute_phi_grad(cXYs: jax.Array, weights: jax.Array, dst_phase_field: jax.A
 @jit
 @partial(vmap, in_axes=(None, None, None, 0, 1, 0), out_axes=0)
 @partial(vmap, in_axes=(None, None, None, 0, 1, 0), out_axes=0)
-def surface_tension_force(
+def compute_surface_tension_force(
     surface_tension: jnp.float32,
     width: jnp.float32,
     weights: jax.Array,
