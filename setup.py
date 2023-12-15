@@ -22,7 +22,7 @@ setup(
         "jax",
         "jaxlib",
         "numpy",
-        "eutils",
+        "etils",
         "meshio",
         "h5py",
         "pandas"
