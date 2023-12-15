@@ -180,7 +180,7 @@ def compute_mom(
 
     inv_kin_visc = (phase_field / kin_visc_one) + \
         (1 - phase_field) / kin_visc_two
-    kin_visc_local = inv_kin_visc
+    kin_visc_local = 1/inv_kin_visc
 
     mom = jnp.einsum('kl,l->k', M_D2Q9, N)
 
