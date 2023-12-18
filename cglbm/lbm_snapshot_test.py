@@ -138,6 +138,28 @@ class LBMSnapshotTest(absltest.TestCase):
         self.assertTrue(np.allclose(actual[2], expected_kin_visc_local))
 
 
+    def test_compute_viscosity_correction(self):
+        system = test_utils.load_config("params.ini")
+
+        input_visc_local_2d = epath.resource_path("cglbm") / f'test-data/compute_mom_output_2d.csv'
+        input_phi_grad_2d = epath.resource_path("cglbm") / f'test-data/compute_viscosity_correction_input_2d.csv'
+        input_3d_path = epath.resource_path("cglbm") / f'test-data/compute_mom_output_3d.csv'
+
+        expected_2d_path = epath.resource_path("cglbm") / f'test-data/compute_viscosity_correction_output_2d.csv'
+
+        kin_visc_local = jnp.array(pd.read_csv(input_visc_local_2d)[["kin_visc_local"]].to_numpy()).reshape(system.LX, system.LY)
+        phi_grad = jnp.array(pd.read_csv(input_phi_grad_2d)[["phi_grad_x", "phi_grad_y"]].to_numpy()).transpose().reshape(2, system.LX, system.LY).transpose(1, 2, 0)
+
+        mom, mom_eq = jnp.array(pd.read_csv(input_3d_path)[["mom", "mom_eq"]].to_numpy()).transpose().reshape(2, system.LX, system.LY, system.NL)
+
+        expected = np.array(pd.read_csv(expected_2d_path)[["viscous_force_x", "viscous_force_y"]].to_numpy()).transpose().reshape(2, system.LX, system.LY).transpose(1, 2, 0)
+
+        actual_d = compute_viscosity_correction(system.invM_D2Q9, system.cMs, system.density_one, system.density_two, phi_grad, kin_visc_local, mom, mom_eq)
+        actual = jax.device_get(actual_d)
+
+        self.assertTrue(np.allclose(actual, expected))
+
+
 
 if __name__ == "__main__":
     # jax.config.update("jax_enable_x64", True)

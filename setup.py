@@ -1,5 +1,5 @@
 """
-pip install -e .
+pip install "cglbm[develop]" -e .
 """
 
 from setuptools import find_packages

@@ -208,11 +208,11 @@ def compute_viscosity_correction(
         density_two: jnp.float32
         phi_grad: (X,Y,2,)
         kin_visc_local: (X,Y,)
-        mom: (X, Y, 9)
-        mom_eq: (X, Y, 9)
+        mom: (X,Y,9,)
+        mom_eq: (X,Y,9,)
 
     Returns:
-        viscous_force: (X, Y)
+        viscous_force: (X,Y,2,)
     """
     tauL = 0.5 + 3 * kin_visc_local
 
