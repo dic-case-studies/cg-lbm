@@ -65,28 +65,21 @@ class LBMSnapshotTest(absltest.TestCase):
         # self.assertTrue(np.allclose(actual, expected))
 
     def test_compute_phi_grad(self):
-        # Note: currently failing (because dst_phase_field doesn't match)
+        # Note: phi_grad output has difference in precision, hence doing np.allclose with 1e-7 precision
         system = test_utils.load_config("params.ini")
 
         input_path = epath.resource_path(
-            "cglbm") / f'test-data/compute_phi_grad_input.csv'
+            "cglbm") / f'test-data/compute_dst_phase_field_output.csv'
         expected_path = epath.resource_path(
             "cglbm") / f'test-data/compute_phi_grad_output.csv'
 
-        phase_field = jnp.array(pd.read_csv(input_path)[
-            "phase_field"].to_numpy().reshape(system.LX, system.LY))
-        expected_phi_grad_x = pd.read_csv(
-            expected_path)["phi_grad_x"].to_numpy().reshape(system.LX, system.LY)
-        expected_phi_grad_y = pd.read_csv(
-            expected_path)["phi_grad_y"].to_numpy().reshape(system.LX, system.LY)
-        expected = np.stack([expected_phi_grad_x, expected_phi_grad_y]).transpose(1, 2, 0)
+        dst_phase_field = pd.read_csv(input_path)["dst_phase_field"].to_numpy().reshape(system.LX, system.LY, system.NL).transpose(2, 0, 1)        
+        expected = jnp.array(pd.read_csv(expected_path)[["phi_grad_x", "phi_grad_y"]].to_numpy()).transpose().reshape(2, system.LX, system.LY).transpose(1, 2, 0)
 
-        dst_phase_field = compute_dst_phase_field(system.cXs, system.cYs, phase_field)
-        
         actual_d = compute_phi_grad(system.cXYs, system.weights, dst_phase_field)
         actual = jax.device_get(actual_d)
 
-        # self.assertTrue(np.allclose(actual, expected))
+        self.assertTrue(np.allclose(actual, expected, atol=1e-7))
 
     def test_surface_tension_force(self):
         system = test_utils.load_config("params.ini")
