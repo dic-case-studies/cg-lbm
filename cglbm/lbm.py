@@ -333,16 +333,16 @@ def compute_collision(
     """
     Args:
         invM_D2Q9: (k,k,)
-        obs: (X,Y)
-        mom: (X, Y, 9)
-        mom_eq: (X, Y, 9)
+        obs: (X,Y,)
+        mom: (X,Y,k,)
+        mom_eq: (X,Y,k,)
         kin_visc_local: (X,Y,)
         interface_force: (X,Y,2,)
         rho: (X,Y,)
-        N: (k,X,Y)
+        N: (k,X,Y,)
 
     Returns:
-        N_new: (k,X, Y)
+        N_new: (k,X,Y,)
     """
     # TODO: For collision the u, pressure, rho are are supposed to be taken after
     # the compute_density_velocity_pressure
@@ -364,7 +364,7 @@ def compute_collision(
     N_new = jnp.einsum("kl,l->k", invM_D2Q9, mom_diff)
 
     # We will have to compute this to avoid divergence
-    return lax.select(obs, N_new[np.array([0, 3, 4, 1, 2, 7, 8, 5, 6])], N_new)
+    return lax.select(obs, N, N_new)
 
 
 @jit

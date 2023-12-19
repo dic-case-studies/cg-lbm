@@ -70,6 +70,15 @@ def simulation_step(system: System, state: State, idx: int) -> State:
         total_force
     )
 
+    mom, mom_eq, kin_visc_local = compute_mom(
+        system.kin_visc_one,
+        system.kin_visc_two,
+        system.M_D2Q9,
+        u,
+        pressure,
+        phase_field,
+        state.N)
+
     N_new = compute_collision(
         system.invM_D2Q9,
         state.obs,

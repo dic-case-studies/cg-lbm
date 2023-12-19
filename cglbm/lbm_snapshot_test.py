@@ -175,6 +175,43 @@ class LBMSnapshotTest(absltest.TestCase):
         self.assertTrue(np.allclose(actual, expected))
 
 
+    def test_compute_collision(self):
+        # NOTE: only comparing output ignoring first and last 2 columns, which are obstacle columns
+        # have to handle properly the case for obstacles
+        system = test_utils.load_config("params.ini")
+
+        input_obstacle_path = epath.resource_path("cglbm") / f'test-data/obstacle_input.csv'
+        input_collision_2d_path = epath.resource_path("cglbm") / f'test-data/compute_collision_input_2d.csv'
+        input_collision_3d_path = epath.resource_path("cglbm") / f'test-data/compute_collision_input_3d.csv'
+
+        obs = jnp.array(pd.read_csv(input_obstacle_path)["obs"].to_numpy()).reshape(system.LX, system.LY)
+
+        rho, interface_force_x, interface_force_y, kin_visc_local = jnp.array(pd.read_csv(input_collision_2d_path)[[
+            "rho", "interface_force_x", "interface_force_y", "kin_visc_local"]].to_numpy())\
+                .transpose()\
+                .reshape(4, system.LX, system.LY)
+
+        interface_force = jnp.stack([interface_force_x, interface_force_y]).transpose(1, 2, 0)
+
+        N = jnp.array(pd.read_csv(input_collision_3d_path)[["N"]].to_numpy())\
+            .reshape(system.LX, system.LY, system.NL)\
+            .transpose(2, 0, 1)
+        mom, mom_eq = jnp.array(pd.read_csv(input_collision_3d_path)[[
+            "mom", "mom_eq"]].to_numpy())\
+            .transpose()\
+            .reshape(2, system.LX, system.LY, system.NL)
+
+        expected_path = epath.resource_path("cglbm") / f'test-data/compute_collision_output.csv'
+
+        expected = pd.read_csv(expected_path)[["N_new"]].to_numpy()\
+            .reshape(system.LX, system.LY, system.NL)\
+            .transpose(2, 0, 1)
+
+        actual_d = compute_collision(system.invM_D2Q9, obs, mom, mom_eq, kin_visc_local, interface_force, rho, N)
+        actual = jax.device_get(actual_d)
+
+        self.assertTrue(np.allclose(actual[:,:,2:-2], expected[:,:,2:-2]))
+
 
 if __name__ == "__main__":
     # jax.config.update("jax_enable_x64", True)
