@@ -73,7 +73,7 @@ class LBMSnapshotTest(absltest.TestCase):
         expected_path = epath.resource_path(
             "cglbm") / f'test-data/compute_phi_grad_output.csv'
 
-        dst_phase_field = pd.read_csv(input_path)["dst_phase_field"].to_numpy().reshape(system.LX, system.LY, system.NL).transpose(2, 0, 1)        
+        dst_phase_field = pd.read_csv(input_path)["dst_phase_field"].to_numpy().reshape(system.LX, system.LY, system.NL).transpose(2, 0, 1)
         expected = jnp.array(pd.read_csv(expected_path)[["phi_grad_x", "phi_grad_y"]].to_numpy()).transpose().reshape(2, system.LX, system.LY).transpose(1, 2, 0)
 
         actual_d = compute_phi_grad(system.cXYs, system.weights, dst_phase_field)
@@ -86,16 +86,18 @@ class LBMSnapshotTest(absltest.TestCase):
 
         input_path = epath.resource_path(
             "cglbm") / f'test-data/compute_surface_tension_force_input.csv'
+        input_dst_phase_field_path = epath.resource_path(
+            "cglbm") / f'test-data/compute_dst_phase_field_output.csv'
         expected_path = epath.resource_path(
             "cglbm") / f'test-data/compute_surface_tension_force_output.csv'
 
         phase_field, phi_grad_x, phi_grad_y = jnp.array(pd.read_csv(input_path)[
             ["phase_field", "phi_grad_x", "phi_grad_y"]].to_numpy()).transpose().reshape(3, system.LX, system.LY)
+        phi_grad = jnp.stack([phi_grad_x, phi_grad_y]).transpose(1, 2, 0)
+        dst_phase_field = pd.read_csv(input_dst_phase_field_path)["dst_phase_field"].to_numpy().reshape(
+            system.LX, system.LY, system.NL).transpose(2, 0, 1)
         expected = np.array(pd.read_csv(
             expected_path)[["curvature_force_x", "curvature_force_y"]].to_numpy()).reshape(system.LX, system.LY, 2)
-
-        dst_phase_field = compute_dst_phase_field(system.cXs, system.cYs, phase_field)
-        phi_grad = jnp.stack([phi_grad_x, phi_grad_y]).transpose(1, 2, 0)
 
         actual_d = compute_surface_tension_force(system.surface_tension, system.width, system.weights,
                                                 phase_field, dst_phase_field, phi_grad)
@@ -145,7 +147,7 @@ class LBMSnapshotTest(absltest.TestCase):
 
         mom, mom_eq = jnp.array(pd.read_csv(input_3d_path)[["mom", "mom_eq"]].to_numpy()).transpose().reshape(2, system.LX, system.LY, system.NL)
 
-        expected = np.array(pd.read_csv(expected_2d_path)[["viscous_force_x", "viscous_force_y"]].to_numpy()).transpose().reshape(2, system.LX, system.LY).transpose(1, 2, 0)
+        expected = np.array(pd.read_csv(expected_2d_path)[["viscous_force_x", "viscous_force_y"]].to_numpy()).reshape(system.LX, system.LY, 2)
 
         actual_d = compute_viscosity_correction(system.invM_D2Q9, system.cMs, system.density_one, system.density_two, phi_grad, kin_visc_local, mom, mom_eq)
         actual = jax.device_get(actual_d)
