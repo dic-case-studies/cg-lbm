@@ -244,12 +244,12 @@ def compute_total_force(
     Args:
         gravityX: ()
         gravityY: ()
-        curvature_force: (X, Y, 2,)
-        viscous_force: (X, Y,)
-        rho: (X, Y,)
+        curvature_force: (X,Y,2,)
+        viscous_force: (X,Y,2,)
+        rho: (X,Y,)
 
     Returns:
-        total_force: (X, Y, 2,)
+        total_force: (X,Y,2,)
     """
     rest_force = jnp.stack([rho * gravityX, rho * gravityY])
     return rest_force + curvature_force + viscous_force
