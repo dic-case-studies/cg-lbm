@@ -344,8 +344,6 @@ def compute_collision(
     Returns:
         N_new: (k,X,Y,)
     """
-    # TODO: For collision the u, pressure, rho are are supposed to be taken after
-    # the compute_density_velocity_pressure
     tauL = 0.5 + 3 * kin_visc_local
 
     S_D2Q9 = jnp.ones(9)
