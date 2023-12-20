@@ -339,7 +339,8 @@ class LBMPerfTest(absltest.TestCase):
         def init_fn(rng):
             LX = system.LX
             LY = system.LY
-            rngs = jax.random.split(rng, 5)
+            obs = jnp.zeros((LX, LY), dtype=bool)
+            rngs = jax.random.split(rng, 7)
 
             return {
                 "density_one": system.density_one,
@@ -348,11 +349,14 @@ class LBMPerfTest(absltest.TestCase):
                 "cYs": system.cYs,
                 "weights": system.weights,
                 "phi_weights": system.phi_weights,
+                "obs": obs,
                 "pressure": jax.random.normal(rngs[0], (LX, LY)),
-                "phase_field": jax.random.normal(rngs[1], (LX, LY)),
-                "phi_grad": jax.random.normal(rngs[2], (LX, LY, 2)),
-                "N": jax.random.normal(rngs[3], (9, LX, LY)),
-                "total_force": jax.random.normal(rngs[4], (LX, LY, 2))
+                "u": jax.random.normal(rngs[1], (LX, LY, 2)),
+                "rho": jax.random.normal(rngs[2], (LX, LY)),
+                "phase_field": jax.random.normal(rngs[3], (LX, LY)),
+                "phi_grad": jax.random.normal(rngs[4], (LX, LY, 2)),
+                "N": jax.random.normal(rngs[5], (9, LX, LY)),
+                "total_force": jax.random.normal(rngs[6], (LX, LY, 2))
             }
 
         def step_fn(state):
@@ -363,7 +367,10 @@ class LBMPerfTest(absltest.TestCase):
                 state["cYs"],
                 state["weights"],
                 state["phi_weights"],
+                state["obs"],
                 state["pressure"],
+                state["u"],
+                state["rho"],
                 state["phase_field"],
                 state["phi_grad"],
                 state["N"],

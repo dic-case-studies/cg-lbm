@@ -256,8 +256,8 @@ def compute_total_force(
 
 
 @jit
-@partial(vmap, in_axes=(None, None, None, None, None, None, 0, 0, 0, 1, 0), out_axes=0)
-@partial(vmap, in_axes=(None, None, None, None, None, None, 0, 0, 0, 1, 0), out_axes=0)
+@partial(vmap, in_axes=(None, None, None, None, None, None, 0, 0, 0, 0, 0, 0, 1, 0), out_axes=0)
+@partial(vmap, in_axes=(None, None, None, None, None, None, 0, 0, 0, 0, 0, 0, 1, 0), out_axes=0)
 def compute_density_velocity_pressure(
     density_one: jnp.float32,
     density_two: jnp.float32,
@@ -265,7 +265,10 @@ def compute_density_velocity_pressure(
     cYs: jax.Array,
     weights: jax.Array,
     phi_weights: jax.Array,
-    pressure: jax.Array,
+    obs: jax.Array,
+    pressure_old: jax.Array,
+    u_old: jax.Array,
+    rho_old: jax.Array, 
     phase_field: jax.Array,
     phi_grad: jax.Array,
     N: jax.Array,
@@ -279,40 +282,46 @@ def compute_density_velocity_pressure(
         cYs: (k,)
         weights: (k,)
         phi_weights: (k,)
-        pressure: (X, Y,)
-        phase_field: (X, Y,)
-        phi_grad: (X, Y, 2,)
-        N: (k, X, Y,)
-        total_force: (X, Y, 2,)
+        obs: (X,Y,),
+        pressure: (X,Y,)
+        u: (X,Y,2),
+        rho: (X,Y,), 
+        phase_field: (X,Y,)
+        phi_grad: (X,Y,2,)
+        N: (k,X,Y,)
+        total_force: (X,Y,2,)
 
     Returns:
-        rho: (X, Y,)
-        u: (X, Y, 2)
-        pressure: (X, Y,)
-        interface_force: (X, Y, 2,)
+        rho: (X,Y,)
+        u: (X,Y,2)
+        pressure: (X,Y,)
+        interface_force: (X,Y,2,)
     """
-
-    # TODO: This function is supposed to happen when obstacle != 1
-
+    
     sumNX = jnp.dot(N, cXs)
     sumNY = jnp.dot(N, cYs)
     sumNV = jnp.stack([sumNX, sumNY])
+    sumN = jnp.sum(N[1:])
 
-    sumN = jnp.sum(N)
-
-    rho = density_one * phase_field + \
+    rho_new = density_one * phase_field + \
         density_two * (1 - phase_field)
+    
+    pressure_new = pressure_old
 
-    # TODO: There was a for loop here is it really needed?
-    u = sumNV + total_force - \
-        (pressure * (density_one - density_two) * phi_grad) / rho
-    usq = jnp.sum(jnp.square(u))
+    for i in range(10):
+        u_new = sumNV + total_force - \
+            (pressure_new * (density_one - density_two) * phi_grad * 0.5) / rho_new
+        usq_new = jnp.sum(jnp.square(u_new))
+        pressure_new = (sumN / 3.0 - weights[0] * usq_new * 0.5 -
+                    (1 - phi_weights[0]) / 3.0) / (1 - weights[0])
 
-    pressure = (sumN / 3.0 - weights[0] * usq * 0.5 -
-                (1 - phi_weights[0]) / 3.0) / (1 - weights[0])
-
-    interface_force = total_force - pressure * \
+    interface_force_new = total_force - pressure_new * \
         (density_one - density_two) * phi_grad
+    
+    rho = jnp.where(obs, rho_old, rho_new)
+    u = jnp.where(obs, u_old, u_new)
+    pressure = jnp.where(obs, pressure_old, pressure_new)
+    interface_force = jnp.where(obs, jnp.zeros(interface_force_new.shape), interface_force_new)
 
     return rho, u, pressure, interface_force
 
