@@ -457,37 +457,64 @@ def handle_obstacle(
     return N, f
 
 
-@jit
-def compute_propagation(
-    cXs: jax.Array,
-    cYs: jax.Array,
-    weights: jax.Array,
-    obs: jax.Array,
-    obsVel: jax.Array,
-    N_new: jax.Array,
-    f_new: jax.Array
-):
-    """
-    Args:
-        cXs: (k,)
-        cYs: (k,)
-        weights: (k,)
-        obs: (X, Y)
-        obsVel: (X, Y, 2,)
-        N_new: (k, X, Y,)
-        f_new: (k, X, Y,)
+# @jit
+# def compute_propagation(
+#     cXs: jax.Array,
+#     cYs: jax.Array,
+#     weights: jax.Array,
+#     obs: jax.Array,
+#     obsVel: jax.Array,
+#     N_new: jax.Array,
+#     f_new: jax.Array
+# ):
+#     """
+#     Args:
+#         cXs: (k,)
+#         cYs: (k,)
+#         weights: (k,)
+#         obs: (X, Y)
+#         obsVel: (X, Y, 2,)
+#         N_new: (k, X, Y,)
+#         f_new: (k, X, Y,)
 
-    Returns:
-        N: (k, X, Y,)
-        f: (k, X, Y,)
-    """
+#     Returns:
+#         N: (k, X, Y,)
+#         f: (k, X, Y,)
+#     """
+#     N = []
+#     f = []
+#     for i, cx, cy in zip(jnp.arange(9), cXs, cYs):
+#         N.append(jnp.roll(N_new[i], (-cx, -cy), axis=(0, 1)))
+#         f.append(jnp.roll(f_new[i], (-cx, -cy), axis=(0, 1)))
+
+#     N_dst = jnp.stack(N)
+#     f_dst = jnp.stack(f)
+
+#     return handle_obstacle(cXs, cYs, weights, obs, obsVel, f_new, f_dst, N_new, N_dst)
+
+
+@jit
+def compute_propagation(cXs, cYs, cXYs, weights, obs, obsVel, N_new, f_new):
     N = []
     f = []
+    dst_obs = []
     for i, cx, cy in zip(jnp.arange(9), cXs, cYs):
         N.append(jnp.roll(N_new[i], (-cx, -cy), axis=(0, 1)))
         f.append(jnp.roll(f_new[i], (-cx, -cy), axis=(0, 1)))
+        dst_obs.append(jnp.roll(obs, (-cx, -cy), axis=(0, 1)))
 
     N_dst = jnp.stack(N)
     f_dst = jnp.stack(f)
+    dst_obs = jnp.stack(dst_obs)
 
-    return handle_obstacle(cXs, cYs, weights, obs, obsVel, f_new, f_dst, N_new, N_dst)
+    N_invert = N_new[jnp.array([0, 3, 4, 1, 2, 7, 8, 5, 6])]\
+          + 6.0 * jnp.einsum("k,kv,ijv->kij", weights, cXYs, obsVel)
+    f_invert = f_new[jnp.array([0, 3, 4, 1, 2, 7, 8, 5, 6])]
+
+    N_temp = jnp.where(dst_obs, N_invert, N_dst)
+    f_temp = jnp.where(dst_obs, f_invert, f_dst)
+
+    N = jnp.where(obs, N_new, N_temp)
+    f = jnp.where(obs, f_new, f_temp)
+
+    return N, f

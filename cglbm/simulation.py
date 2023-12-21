@@ -108,6 +108,7 @@ def simulation_step(system: System, state: State, idx: int) -> State:
     N, f = compute_propagation(
         system.cXs,
         system.cYs,
+        system.cXYs,
         system.weights,
         state.obs,
         state.obs_velocity,
