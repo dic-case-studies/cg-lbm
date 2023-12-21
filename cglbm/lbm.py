@@ -448,7 +448,7 @@ def handle_obstacle(
         N: (k, X, Y,)
         f: (k, X, Y,)
     """
-    N_invert = N_new[np.array([0, 3, 4, 1, 2, 7, 8, 5, 6])] * \
+    N_invert = N_new[np.array([0, 3, 4, 1, 2, 7, 8, 5, 6])] + \
         6.0 * weights * (cXs * obsVel[0] + cYs * obsVel[1])
     f_invert = f_new[np.array([0, 3, 4, 1, 2, 7, 8, 5, 6])]
 
