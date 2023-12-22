@@ -256,6 +256,34 @@ class LBMSnapshotTest(absltest.TestCase):
         self.assertTrue(np.allclose(actual[3],expected_interface_force))
 
 
+    def test_compute_segregation(self):
+        system = test_utils.load_config("params.ini")
+
+        input_2d_path = epath.resource_path("cglbm") / f'test-data/compute_segregation_input_2d.csv'
+        input_3d_path = epath.resource_path("cglbm") / f'test-data/compute_segregation_input_3d.csv'
+        expected_path = epath.resource_path("cglbm") / f'test-data/compute_segregation_output.csv'
+
+        phase_field, phi_grad_x, phi_grad_y, pressure, u_x, u_y = jnp.array(pd.read_csv(input_2d_path)[[
+            "phase_field", "phi_grad_x", "phi_grad_y", "pressure", "u_x", "u_y"]].to_numpy())\
+                .transpose()\
+                .reshape(6, system.LY, system.LX)
+        phi_grad = jnp.stack([phi_grad_x, phi_grad_y]).transpose(1, 2, 0)
+        u = jnp.stack([u_x, u_y]).transpose(1, 2, 0)
+        N_new = jnp.array(pd.read_csv(input_3d_path)["N_new"].to_numpy())\
+            .reshape(system.LY, system.LX, system.NL)\
+            .transpose(2, 0, 1)
+
+        expected = pd.read_csv(expected_path)["f_new"].to_numpy()\
+            .reshape(system.LY, system.LX, system.NL)\
+            .transpose(2, 0, 1)
+
+        actual_d = compute_segregation(system.width, system.cXYs, system.weights, system.phi_weights, phase_field,
+                                        phi_grad, pressure, u, N_new)
+        actual = jax.device_get(actual_d)
+
+        self.assertTrue(np.allclose(actual, expected))
+
+
 if __name__ == "__main__":
     # jax.config.update("jax_enable_x64", True)
     # jax.config.update("jax_disable_jit", True) # for debugging
