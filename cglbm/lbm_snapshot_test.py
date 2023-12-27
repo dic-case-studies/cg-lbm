@@ -283,6 +283,37 @@ class LBMSnapshotTest(absltest.TestCase):
 
         self.assertTrue(np.allclose(actual, expected))
 
+    def test_compute_propagation(self):
+        # NOTE: only comparing output ignoring first and last 2 columns, which are obstacle columns
+        # have to handle properly the case for obstacles
+        # N and f don't change for obstacle cases, but are affected by ghost nodes
+        system = test_utils.load_config("params.ini")
+
+        input_obstacle_path = epath.resource_path("cglbm") / f'test-data/obstacle_input.csv'
+        input_2d_path = epath.resource_path("cglbm") / f'test-data/compute_propagation_input_2d.csv'
+        input_3d_path = epath.resource_path("cglbm") / f'test-data/compute_propagation_input_3d.csv'
+        expected_path = epath.resource_path("cglbm") / f'test-data/compute_propagation_output.csv'
+
+        obs = jnp.array(pd.read_csv(input_obstacle_path)["obs"].to_numpy()).reshape(system.LY, system.LX)
+        obs_vel = jnp.array(pd.read_csv(input_2d_path)[[
+            "obs_vel_x", "obs_vel_y"]].to_numpy())\
+                .reshape(system.LY, system.LX, 2)
+
+        N_new, f_new = jnp.array(pd.read_csv(input_3d_path)[["N_new", "f_new"]].to_numpy())\
+            .reshape(system.LY, system.LX, system.NL, 2)\
+            .transpose(3, 2, 0, 1)
+
+        expected_N, expected_f = pd.read_csv(expected_path)[["N", "f"]].to_numpy()\
+            .reshape(system.LY, system.LX, system.NL, 2)\
+            .transpose(3, 2, 0, 1)
+
+        actual_d = compute_propagation(system.cXs, system.cYs, system.cXYs, system.weights, obs,
+                                        obs_vel, N_new, f_new)#, N, f)
+        actual = jax.device_get(actual_d)
+
+        self.assertTrue(np.allclose(actual[0][:,:,2:-2], expected_N[:,:,2:-2]))
+        self.assertTrue(np.allclose(actual[1][:,:,2:-2], expected_f[:,:,2:-2]))
+
 
 if __name__ == "__main__":
     # jax.config.update("jax_enable_x64", True)
