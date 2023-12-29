@@ -9,8 +9,15 @@ import cglbm.config as cfg
 from einops import rearrange
 
 
-def load_config(path: str) -> System:
+def load_test_config(path: str) -> System:
     full_path = epath.resource_path("cglbm") / f'test-data/{path}'
+    sys = cfg.load_config(full_path)
+
+    return sys
+
+
+def load_sandbox_config(path: str) -> System:
+    full_path = epath.resource_path("cglbm") / f'sandbox-configs/{path}'
     sys = cfg.load_config(full_path)
 
     return sys

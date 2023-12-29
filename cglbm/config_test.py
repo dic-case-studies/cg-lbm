@@ -10,7 +10,7 @@ import cglbm.test_utils as utils
 
 class ConfigTest(parameterized.TestCase):
     def test_read_config(self):
-        sys = utils.load_config("params.ini")
+        sys = utils.load_test_config("params.ini")
         np.testing.assert_equal(sys.LX, 300)
         np.testing.assert_almost_equal(sys.gravityX, 1e-6)
 

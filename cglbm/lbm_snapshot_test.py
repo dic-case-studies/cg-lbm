@@ -14,7 +14,7 @@ class LBMSnapshotTest(absltest.TestCase):
     """
 
     def test_grid_eq_dist(self):
-        system = test_utils.load_config("params.ini")
+        system = test_utils.load_test_config("params.ini")
         GRID_SHAPE = (system.LY, system.LX)
         GRID_3D_SHAPE = (system.LY, system.LX, system.NL)
 
@@ -33,7 +33,7 @@ class LBMSnapshotTest(absltest.TestCase):
 
 
     def test_compute_phase_field(self):
-        system = test_utils.load_config("params.ini")
+        system = test_utils.load_test_config("params.ini")
         GRID_SHAPE = (system.LY, system.LX)
         GRID_3D_SHAPE = (system.LY, system.LX, system.NL)
 
@@ -54,7 +54,7 @@ class LBMSnapshotTest(absltest.TestCase):
 
     def test_compute_dst_phase_field(self):
         # NOTE: currently failing
-        system = test_utils.load_config("params.ini")
+        system = test_utils.load_test_config("params.ini")
         GRID_SHAPE = (system.LY, system.LX)
         GRID_3D_SHAPE = (system.LY, system.LX, system.NL)
 
@@ -75,7 +75,7 @@ class LBMSnapshotTest(absltest.TestCase):
 
     def test_compute_phi_grad(self):
         # NOTE: phi_grad output has difference in precision, hence doing np.allclose with 1e-7 precision
-        system = test_utils.load_config("params.ini")
+        system = test_utils.load_test_config("params.ini")
         GRID_SHAPE = (system.LY, system.LX)
         GRID_3D_SHAPE = (system.LY, system.LX, system.NL)
 
@@ -97,7 +97,7 @@ class LBMSnapshotTest(absltest.TestCase):
 
 
     def test_surface_tension_force(self):
-        system = test_utils.load_config("params.ini")
+        system = test_utils.load_test_config("params.ini")
         GRID_SHAPE = (system.LY, system.LX)
         GRID_3D_SHAPE = (system.LY, system.LX, system.NL)
 
@@ -127,7 +127,7 @@ class LBMSnapshotTest(absltest.TestCase):
 
     def test_compute_mom(self):
         # NOTE: mom output has difference in precision, hence doing np.allclose with 1e-7 precision
-        system = test_utils.load_config("params.ini")
+        system = test_utils.load_test_config("params.ini")
         GRID_SHAPE = (system.LY, system.LX)
         GRID_3D_SHAPE = (system.LY, system.LX, system.NL)
 
@@ -160,7 +160,7 @@ class LBMSnapshotTest(absltest.TestCase):
 
 
     def test_compute_viscosity_correction(self):
-        system = test_utils.load_config("params.ini")
+        system = test_utils.load_test_config("params.ini")
         GRID_SHAPE = (system.LY, system.LX)
         GRID_3D_SHAPE = (system.LY, system.LX, system.NL)
 
@@ -192,7 +192,7 @@ class LBMSnapshotTest(absltest.TestCase):
 
 
     def test_compute_total_force(self):
-        system = test_utils.load_config("params.ini")
+        system = test_utils.load_test_config("params.ini")
         GRID_SHAPE = (system.LY, system.LX)
 
         input_curvature_force_path = 'snapshot_compute_surface_tension_force/compute_surface_tension_force_output.parquet'
@@ -225,7 +225,7 @@ class LBMSnapshotTest(absltest.TestCase):
     def test_compute_collision(self):
         # NOTE: only comparing output ignoring first and last 2 columns, which are obstacle columns
         # have to handle properly the case for obstacles
-        system = test_utils.load_config("params.ini")
+        system = test_utils.load_test_config("params.ini")
         GRID_SHAPE = (system.LY, system.LX)
         GRID_3D_SHAPE = (system.LY, system.LX, system.NL)
 
@@ -258,7 +258,7 @@ class LBMSnapshotTest(absltest.TestCase):
 
     def test_compute_density_velocity_pressure(self):
         # NOTE: velocity (u) output has difference in precision, hence doing np.allclose with 1e-4 precision
-        system = test_utils.load_config("params.ini")
+        system = test_utils.load_test_config("params.ini")
         GRID_SHAPE = (system.LY, system.LX)
         GRID_3D_SHAPE = (system.LY, system.LX, system.NL)
 
@@ -315,7 +315,7 @@ class LBMSnapshotTest(absltest.TestCase):
 
 
     def test_compute_segregation(self):
-        system = test_utils.load_config("params.ini")
+        system = test_utils.load_test_config("params.ini")
         GRID_SHAPE = (system.LY, system.LX)
         GRID_3D_SHAPE = (system.LY, system.LX, system.NL)
 
@@ -349,7 +349,7 @@ class LBMSnapshotTest(absltest.TestCase):
         # NOTE: only comparing output ignoring first and last 2 columns, which are obstacle columns
         # have to handle properly the case for obstacles
         # N and f don't change for obstacle cases, but are affected by ghost nodes
-        system = test_utils.load_config("params.ini")
+        system = test_utils.load_test_config("params.ini")
         GRID_SHAPE = (system.LY, system.LX)
         GRID_3D_SHAPE = (system.LY, system.LX, system.NL)
 

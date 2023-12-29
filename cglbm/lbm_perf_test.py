@@ -11,7 +11,7 @@ class LBMPerfTest(absltest.TestCase):
     """
 
     def test_perf_eq_dist_phase_field(self):
-        system = test_utils.load_config("params.ini")
+        system = test_utils.load_test_config("params.ini")
 
         def init_fn(rng):
             LX = system.LX
@@ -31,7 +31,7 @@ class LBMPerfTest(absltest.TestCase):
 
     
     def test_perf_grid_eq_dist(self):
-        system = test_utils.load_config("params.ini")
+        system = test_utils.load_test_config("params.ini")
 
         def init_fn(rng):
             LX = system.LX
@@ -51,7 +51,7 @@ class LBMPerfTest(absltest.TestCase):
 
     
     def test_perf_eq_dist(self):
-        system = test_utils.load_config("params.ini")
+        system = test_utils.load_test_config("params.ini")
 
         def init_fn(rng):
             rng1, rng2 = jax.random.split(rng, 2)
@@ -69,7 +69,7 @@ class LBMPerfTest(absltest.TestCase):
 
 
     def test_perf_compute_phase_field(self):
-        system = test_utils.load_config("params.ini")
+        system = test_utils.load_test_config("params.ini")
 
         def init_fn(rng):
             LX = system.LX
@@ -87,7 +87,7 @@ class LBMPerfTest(absltest.TestCase):
 
 
     def test_perf_compute_dst_phase_field(self):
-        system = test_utils.load_config("params.ini")
+        system = test_utils.load_test_config("params.ini")
 
         def init_fn(rng):
             LX = system.LX
@@ -105,7 +105,7 @@ class LBMPerfTest(absltest.TestCase):
 
 
     def test_perf_compute_phi_grad(self):
-        system = test_utils.load_config("params.ini")
+        system = test_utils.load_test_config("params.ini")
 
         def init_fn(rng):
             LX = system.LX
@@ -123,7 +123,7 @@ class LBMPerfTest(absltest.TestCase):
 
 
     def test_perf_surface_tension_force(self):
-        system = test_utils.load_config("params.ini")
+        system = test_utils.load_test_config("params.ini")
 
         def init_fn(rng):
             LX = system.LX
@@ -158,7 +158,7 @@ class LBMPerfTest(absltest.TestCase):
 
 
     def test_perf_compute_mom(self):
-        system = test_utils.load_config("params.ini")
+        system = test_utils.load_test_config("params.ini")
 
         def init_fn(rng):
             LX = system.LX
@@ -195,7 +195,7 @@ class LBMPerfTest(absltest.TestCase):
 
 
     def test_perf_compute_viscosity_correction(self):
-        system = test_utils.load_config("params.ini")
+        system = test_utils.load_test_config("params.ini")
 
         def init_fn(rng):
             LX = system.LX
@@ -230,7 +230,7 @@ class LBMPerfTest(absltest.TestCase):
 
 
     def test_perf_compute_collision(self):
-        system = test_utils.load_config("params.ini")
+        system = test_utils.load_test_config("params.ini")
 
         def init_fn(rng):
             LX = system.LX
@@ -267,7 +267,7 @@ class LBMPerfTest(absltest.TestCase):
 
 
     def test_perf_compute_propagation(self):
-        system = test_utils.load_config("params.ini")
+        system = test_utils.load_test_config("params.ini")
 
         def init_fn(rng):
             LX = system.LX
@@ -303,7 +303,7 @@ class LBMPerfTest(absltest.TestCase):
 
 
     def test_perf_compute_total_force(self):
-        system = test_utils.load_config("params.ini")
+        system = test_utils.load_test_config("params.ini")
 
         def init_fn(rng):
             LX = system.LX
@@ -334,7 +334,7 @@ class LBMPerfTest(absltest.TestCase):
 
 
     def test_perf_compute_density_velocity_pressure(self):
-        system = test_utils.load_config("params.ini")
+        system = test_utils.load_test_config("params.ini")
 
         def init_fn(rng):
             LX = system.LX
@@ -381,7 +381,7 @@ class LBMPerfTest(absltest.TestCase):
 
 
     def test_perf_compute_segregation(self):
-        system = test_utils.load_config("params.ini")
+        system = test_utils.load_test_config("params.ini")
 
         def init_fn(rng):
             LX = system.LX
