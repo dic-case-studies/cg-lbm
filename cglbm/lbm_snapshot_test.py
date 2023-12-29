@@ -42,7 +42,7 @@ class LBMSnapshotTest(absltest.TestCase):
         expected_path = 'snapshot_compute_phase_field/compute_phase_field_output.parquet'
 
         input_helper = ParquetIOHelper(input_path).read()
-        f = input_helper.get("f", GRID_3D_SHAPE, "i j k -> k i j")
+        f = jnp.array(input_helper.get("f", GRID_3D_SHAPE, "i j k -> k i j"))
 
         output_helper = ParquetIOHelper(expected_path).read()
         expected = output_helper.get("phase_field", GRID_SHAPE)
@@ -63,7 +63,7 @@ class LBMSnapshotTest(absltest.TestCase):
         expected_path = 'snapshot_compute_dst_phase_field/compute_dst_phase_field_output.parquet'
 
         input_helper = ParquetIOHelper(input_path).read()
-        phase_field = input_helper.get("phase_field", GRID_SHAPE)
+        phase_field = jnp.array(input_helper.get("phase_field", GRID_SHAPE))
 
         output_helper = ParquetIOHelper(expected_path).read()
         expected = output_helper.get("dst_phase_field", GRID_3D_SHAPE, "i j k -> k i j")
@@ -85,8 +85,8 @@ class LBMSnapshotTest(absltest.TestCase):
         expected_path = 'snapshot_compute_phi_grad/compute_phi_grad_output.parquet'
 
         input_helper = ParquetIOHelper(input_path).read()
-        dst_phase_field = input_helper.get(
-            "dst_phase_field", GRID_3D_SHAPE, "i j k -> k i j")
+        dst_phase_field = jnp.array(
+            input_helper.get("dst_phase_field", GRID_3D_SHAPE, "i j k -> k i j"))
 
         output_helper = ParquetIOHelper(expected_path).read()
         expected_phi_grad_x = output_helper.get("phi_grad_x", GRID_SHAPE)
@@ -111,12 +111,12 @@ class LBMSnapshotTest(absltest.TestCase):
 
         surface_tension_input_helper = ParquetIOHelper(input_surface_tension_path).read()
         dst_phase_field_helper = ParquetIOHelper(input_dst_phase_field_path).read()
-        phase_field = surface_tension_input_helper.get("phase_field", GRID_SHAPE)
-        phi_grad_x = surface_tension_input_helper.get("phi_grad_x", GRID_SHAPE)
-        phi_grad_y = surface_tension_input_helper.get("phi_grad_y", GRID_SHAPE)
+        phase_field = jnp.array(surface_tension_input_helper.get("phase_field", GRID_SHAPE))
+        phi_grad_x = jnp.array(surface_tension_input_helper.get("phi_grad_x", GRID_SHAPE))
+        phi_grad_y = jnp.array(surface_tension_input_helper.get("phi_grad_y", GRID_SHAPE))
         phi_grad = rearrange(jnp.stack([phi_grad_x, phi_grad_y]), "v i j -> i j v")
-        dst_phase_field = dst_phase_field_helper.get("dst_phase_field", GRID_3D_SHAPE,
-                                                     "i j k -> k i j")
+        dst_phase_field = jnp.array(
+            dst_phase_field_helper.get("dst_phase_field", GRID_3D_SHAPE, "i j k -> k i j"))
 
         output_helper = ParquetIOHelper(expected_path).read()
         expected_curvature_force_x = output_helper.get("curvature_force_x", GRID_SHAPE)
@@ -150,12 +150,12 @@ class LBMSnapshotTest(absltest.TestCase):
 
         mom_2d_input_helper = ParquetIOHelper(input_2d_path).read()
         mom_3d_input_helper = ParquetIOHelper(input_3d_path).read()
-        phase_field = mom_2d_input_helper.get("phase_field", GRID_SHAPE)
-        pressure = mom_2d_input_helper.get("pressure", GRID_SHAPE)
-        ux = mom_2d_input_helper.get("ux", GRID_SHAPE)
-        uy = mom_2d_input_helper.get("uy", GRID_SHAPE)
+        phase_field = jnp.array(mom_2d_input_helper.get("phase_field", GRID_SHAPE))
+        pressure = jnp.array(mom_2d_input_helper.get("pressure", GRID_SHAPE))
+        ux = jnp.array(mom_2d_input_helper.get("ux", GRID_SHAPE))
+        uy = jnp.array(mom_2d_input_helper.get("uy", GRID_SHAPE))
         u = rearrange(jnp.stack([ux, uy]), "v i j -> i j v")
-        N = mom_3d_input_helper.get("N", GRID_3D_SHAPE, "i j k -> k i j")
+        N = jnp.array(mom_3d_input_helper.get("N", GRID_3D_SHAPE, "i j k -> k i j"))
 
         output_2d_helper = ParquetIOHelper(expected_2d_path).read()
         output_3d_helper = ParquetIOHelper(expected_3d_path).read()
@@ -185,12 +185,12 @@ class LBMSnapshotTest(absltest.TestCase):
         visc_local_input_helper = ParquetIOHelper(input_visc_local_2d).read()
         phi_grad_input_helper = ParquetIOHelper(input_phi_grad_2d).read()
         input_3d_helper = ParquetIOHelper(input_3d_path).read()
-        kin_visc_local = visc_local_input_helper.get("kin_visc_local", GRID_SHAPE)
-        phi_grad_x = phi_grad_input_helper.get("phi_grad_x", GRID_SHAPE)
-        phi_grad_y = phi_grad_input_helper.get("phi_grad_y", GRID_SHAPE)
+        kin_visc_local = jnp.array(visc_local_input_helper.get("kin_visc_local", GRID_SHAPE))
+        phi_grad_x = jnp.array(phi_grad_input_helper.get("phi_grad_x", GRID_SHAPE))
+        phi_grad_y = jnp.array(phi_grad_input_helper.get("phi_grad_y", GRID_SHAPE))
         phi_grad = rearrange(jnp.stack([phi_grad_x, phi_grad_y]), "v i j -> i j v")
-        mom = input_3d_helper.get("mom", GRID_3D_SHAPE)
-        mom_eq = input_3d_helper.get("mom_eq", GRID_3D_SHAPE)
+        mom = jnp.array(input_3d_helper.get("mom", GRID_3D_SHAPE))
+        mom_eq = jnp.array(input_3d_helper.get("mom_eq", GRID_3D_SHAPE))
 
         output_helper = ParquetIOHelper(expected_2d_path).read()
         expected_visc_force_x = output_helper.get("viscous_force_x", GRID_SHAPE)
@@ -224,17 +224,19 @@ class LBMSnapshotTest(absltest.TestCase):
         curvature_force_input_helper = ParquetIOHelper(input_curvature_force_path).read()
         viscous_force_input_helper = ParquetIOHelper(input_viscous_force_path).read()
         rho_input_helper = ParquetIOHelper(input_rho_path).read()
-        curvature_force_x = curvature_force_input_helper.get(
-            "curvature_force_x", GRID_SHAPE)
-        curvature_force_y = curvature_force_input_helper.get(
-            "curvature_force_y", GRID_SHAPE)
-        curvature_force = rearrange(jnp.stack([curvature_force_x, curvature_force_y]),
-                                    "v i j -> i j v")
-        viscous_force_x = viscous_force_input_helper.get("viscous_force_x", GRID_SHAPE)
-        viscous_force_x = viscous_force_input_helper.get("viscous_force_y", GRID_SHAPE)
+        curvature_force_x = jnp.array(
+            curvature_force_input_helper.get("curvature_force_x", GRID_SHAPE))
+        curvature_force_y = jnp.array(
+            curvature_force_input_helper.get("curvature_force_y", GRID_SHAPE))
+        curvature_force = rearrange(
+            jnp.stack([curvature_force_x, curvature_force_y]), "v i j -> i j v")
+        viscous_force_x = jnp.array(
+            viscous_force_input_helper.get("viscous_force_x", GRID_SHAPE))
+        viscous_force_x = jnp.array(
+            viscous_force_input_helper.get("viscous_force_y", GRID_SHAPE))
         viscous_force = rearrange(
             jnp.stack([viscous_force_x, viscous_force_x]), "v i j -> i j v")
-        rho = rho_input_helper.get("rho", GRID_SHAPE)
+        rho = jnp.array(rho_input_helper.get("rho", GRID_SHAPE))
 
         output_helper = ParquetIOHelper(expected_path).read()
         expected_total_force_x = output_helper.get("total_force_x", GRID_SHAPE)
@@ -264,16 +266,16 @@ class LBMSnapshotTest(absltest.TestCase):
         obstacle_input_helper = ParquetIOHelper(input_obstacle_path).read()
         collision_2d_input_helper = ParquetIOHelper(input_collision_2d_path).read()
         collision_3d_input_helper = ParquetIOHelper(input_collision_3d_path).read()
-        obs = obstacle_input_helper.get("obs", GRID_SHAPE)
-        rho = collision_2d_input_helper.get("rho", GRID_SHAPE)
-        kin_visc_local = collision_2d_input_helper.get("kin_visc_local", GRID_SHAPE)
-        interface_force_x = collision_2d_input_helper.get("interface_force_x", GRID_SHAPE)
-        interface_force_y = collision_2d_input_helper.get("interface_force_y", GRID_SHAPE)
+        obs = jnp.array(obstacle_input_helper.get("obs", GRID_SHAPE))
+        rho = jnp.array(collision_2d_input_helper.get("rho", GRID_SHAPE))
+        kin_visc_local = jnp.array(collision_2d_input_helper.get("kin_visc_local", GRID_SHAPE))
+        interface_force_x = jnp.array(collision_2d_input_helper.get("interface_force_x", GRID_SHAPE))
+        interface_force_y = jnp.array(collision_2d_input_helper.get("interface_force_y", GRID_SHAPE))
         interface_force = rearrange(
             jnp.stack([interface_force_x, interface_force_y]), "v i j -> i j v")
-        mom = collision_3d_input_helper.get("mom", GRID_3D_SHAPE)
-        mom_eq = collision_3d_input_helper.get("mom_eq", GRID_3D_SHAPE)
-        N = collision_3d_input_helper.get("N", GRID_3D_SHAPE, "i j k -> k i j")
+        mom = jnp.array(collision_3d_input_helper.get("mom", GRID_3D_SHAPE))
+        mom_eq = jnp.array(collision_3d_input_helper.get("mom_eq", GRID_3D_SHAPE))
+        N = jnp.array(collision_3d_input_helper.get("N", GRID_3D_SHAPE, "i j k -> k i j"))
 
         output_helper = ParquetIOHelper(expected_path).read()
         expected = output_helper.get("N_new", GRID_3D_SHAPE, "i j k -> k i j")
@@ -306,23 +308,21 @@ class LBMSnapshotTest(absltest.TestCase):
         obstacle_input_helper = ParquetIOHelper(input_obstacle_path).read()
         input_2d_helper = ParquetIOHelper(input_2d_path).read()
         input_3d_helper = ParquetIOHelper(input_3d_path).read()
-        phase_field = phase_field_input_helper.get("phase_field", GRID_SHAPE)
-        phi_grad_x = phase_field_input_helper.get("phase_field", GRID_SHAPE)
-        phi_grad_y = phase_field_input_helper.get("phase_field", GRID_SHAPE)
-        phi_grad_x = phi_grad_input_helper.get("phi_grad_x", GRID_SHAPE)
-        phi_grad_y = phi_grad_input_helper.get("phi_grad_y", GRID_SHAPE)
+        phase_field = jnp.array(phase_field_input_helper.get("phase_field", GRID_SHAPE))
+        phi_grad_x = jnp.array(phi_grad_input_helper.get("phi_grad_x", GRID_SHAPE))
+        phi_grad_y = jnp.array(phi_grad_input_helper.get("phi_grad_y", GRID_SHAPE))
         phi_grad = rearrange(jnp.stack([phi_grad_x, phi_grad_y]), "v i j -> i j v")
-        total_force_x = total_force_input_helper.get("total_force_x", GRID_SHAPE)
-        total_force_y = total_force_input_helper.get("total_force_y", GRID_SHAPE)
+        total_force_x = jnp.array(total_force_input_helper.get("total_force_x", GRID_SHAPE))
+        total_force_y = jnp.array(total_force_input_helper.get("total_force_y", GRID_SHAPE))
         total_force = rearrange(
             jnp.stack([total_force_x, total_force_y]), "v i j -> i j v")
-        rho = input_2d_helper.get("rho", GRID_SHAPE)
-        pressure = input_2d_helper.get("pressure", GRID_SHAPE)
-        u_x = input_2d_helper.get("u_x", GRID_SHAPE)
-        u_y = input_2d_helper.get("u_y", GRID_SHAPE)
+        rho = jnp.array(input_2d_helper.get("rho", GRID_SHAPE))
+        pressure = jnp.array(input_2d_helper.get("pressure", GRID_SHAPE))
+        u_x = jnp.array(input_2d_helper.get("u_x", GRID_SHAPE))
+        u_y = jnp.array(input_2d_helper.get("u_y", GRID_SHAPE))
         u = rearrange(jnp.stack([u_x, u_y]), "v i j -> i j v")
-        obs = obstacle_input_helper.get("obs", GRID_SHAPE)
-        N = input_3d_helper.get("N", GRID_3D_SHAPE, "i j k -> k i j")
+        obs = jnp.array(obstacle_input_helper.get("obs", GRID_SHAPE))
+        N = jnp.array(input_3d_helper.get("N", GRID_3D_SHAPE, "i j k -> k i j"))
 
         output_helper = ParquetIOHelper(expected_path).read()
         expected_rho = output_helper.get("rho", GRID_SHAPE)
@@ -371,15 +371,15 @@ class LBMSnapshotTest(absltest.TestCase):
 
         input_2d_helper = ParquetIOHelper(input_2d_path).read()
         input_3d_helper = ParquetIOHelper(input_3d_path).read()
-        phase_field = input_2d_helper.get("phase_field", GRID_SHAPE)
-        phi_grad_x = input_2d_helper.get("phi_grad_x", GRID_SHAPE)
-        phi_grad_y = input_2d_helper.get("phi_grad_y", GRID_SHAPE)
-        pressure = input_2d_helper.get("pressure", GRID_SHAPE)
-        u_x = input_2d_helper.get("u_x", GRID_SHAPE)
-        u_y = input_2d_helper.get("u_y", GRID_SHAPE)
+        phase_field = jnp.array(input_2d_helper.get("phase_field", GRID_SHAPE))
+        phi_grad_x = jnp.array(input_2d_helper.get("phi_grad_x", GRID_SHAPE))
+        phi_grad_y = jnp.array(input_2d_helper.get("phi_grad_y", GRID_SHAPE))
+        pressure = jnp.array(input_2d_helper.get("pressure", GRID_SHAPE))
+        u_x = jnp.array(input_2d_helper.get("u_x", GRID_SHAPE))
+        u_y = jnp.array(input_2d_helper.get("u_y", GRID_SHAPE))
         phi_grad = rearrange(jnp.stack([phi_grad_x, phi_grad_y]), "v i j -> i j v")
         u = rearrange(jnp.stack([u_x, u_y]), "v i j -> i j v")
-        N_new = input_3d_helper.get("N_new", GRID_3D_SHAPE, "i j k -> k i j")
+        N_new = jnp.array(input_3d_helper.get("N_new", GRID_3D_SHAPE, "i j k -> k i j"))
 
         output_helper = ParquetIOHelper(expected_path).read()
         expected = output_helper.get("f_new", GRID_3D_SHAPE, "i j k -> k i j")
@@ -415,12 +415,12 @@ class LBMSnapshotTest(absltest.TestCase):
         obstacle_input_helper = ParquetIOHelper(input_obstacle_path).read()
         input_2d_helper = ParquetIOHelper(input_2d_path).read()
         input_3d_helper = ParquetIOHelper(input_3d_path).read()
-        obs = obstacle_input_helper.get("obs", GRID_SHAPE)
-        obs_vel_x = input_2d_helper.get("obs_vel_x", GRID_SHAPE)
-        obs_vel_y = input_2d_helper.get("obs_vel_y", GRID_SHAPE)
+        obs = jnp.array(obstacle_input_helper.get("obs", GRID_SHAPE))
+        obs_vel_x = jnp.array(input_2d_helper.get("obs_vel_x", GRID_SHAPE))
+        obs_vel_y = jnp.array(input_2d_helper.get("obs_vel_y", GRID_SHAPE))
         obs_vel = rearrange(jnp.stack([obs_vel_x, obs_vel_y]), "v i j -> i j v")
-        N_new = input_3d_helper.get("N_new", GRID_3D_SHAPE, "i j k -> k i j")
-        f_new = input_3d_helper.get("f_new", GRID_3D_SHAPE, "i j k -> k i j")
+        N_new = jnp.array(input_3d_helper.get("N_new", GRID_3D_SHAPE, "i j k -> k i j"))
+        f_new = jnp.array(input_3d_helper.get("f_new", GRID_3D_SHAPE, "i j k -> k i j"))
 
         output_helper = ParquetIOHelper(expected_path).read()
         expected_N = output_helper.get("N", GRID_3D_SHAPE, "i j k -> k i j")
