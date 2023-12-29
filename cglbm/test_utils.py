@@ -53,8 +53,9 @@ def benchmark(
 
 class ParquetIOHelper:
     def __init__(self, filepath: str):
-        self.filepath = filepath
+        self.filepath = epath.resource_path("cglbm") / 'test-data' / filepath
         self.data = {}
+
 
     def read(self):
         df = pd.read_parquet(self.filepath)
@@ -63,6 +64,7 @@ class ParquetIOHelper:
         for i in range(len(cols)):
             self.data[cols[i]] = values[i]
         return self
+
 
     def get(self, column_name, shape, arrange_pattern=None):
         value = self.data[column_name].reshape(*shape)
