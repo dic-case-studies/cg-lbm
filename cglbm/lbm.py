@@ -2,7 +2,6 @@ from functools import partial
 import jax
 from jax import vmap, jit, lax
 from jax import numpy as jnp
-import numpy as np
 
 
 @jit
@@ -180,7 +179,7 @@ def compute_mom(
 
     inv_kin_visc = (phase_field / kin_visc_one) + \
         (1 - phase_field) / kin_visc_two
-    kin_visc_local = 1/inv_kin_visc
+    kin_visc_local = 1 / inv_kin_visc
 
     mom = jnp.einsum('kl,l->k', M_D2Q9, N)
 
@@ -256,8 +255,10 @@ def compute_total_force(
 
 
 @jit
-@partial(vmap, in_axes=(None, None, None, None, None, None, 0, 0, 0, 0, 0, 0, 1, 0), out_axes=0)
-@partial(vmap, in_axes=(None, None, None, None, None, None, 0, 0, 0, 0, 0, 0, 1, 0), out_axes=0)
+@partial(vmap, in_axes=(None, None, None, None, None,
+         None, 0, 0, 0, 0, 0, 0, 1, 0), out_axes=0)
+@partial(vmap, in_axes=(None, None, None, None, None,
+         None, 0, 0, 0, 0, 0, 0, 1, 0), out_axes=0)
 def compute_density_velocity_pressure(
     density_one: jnp.float32,
     density_two: jnp.float32,
@@ -268,7 +269,7 @@ def compute_density_velocity_pressure(
     obs: jax.Array,
     pressure_old: jax.Array,
     u_old: jax.Array,
-    rho_old: jax.Array, 
+    rho_old: jax.Array,
     phase_field: jax.Array,
     phi_grad: jax.Array,
     N: jax.Array,
@@ -285,7 +286,7 @@ def compute_density_velocity_pressure(
         obs: (X,Y,),
         pressure: (X,Y,)
         u: (X,Y,2),
-        rho: (X,Y,), 
+        rho: (X,Y,),
         phase_field: (X,Y,)
         phi_grad: (X,Y,2,)
         N: (k,X,Y,)
@@ -297,7 +298,7 @@ def compute_density_velocity_pressure(
         pressure: (X,Y,)
         interface_force: (X,Y,2,)
     """
-    
+
     sumNX = jnp.dot(N, cXs)
     sumNY = jnp.dot(N, cYs)
     sumNV = jnp.stack([sumNX, sumNY])
@@ -305,23 +306,25 @@ def compute_density_velocity_pressure(
 
     rho_new = density_one * phase_field + \
         density_two * (1 - phase_field)
-    
+
     pressure_new = pressure_old
 
-    for i in range(10):
+    for _ in range(10):
         u_new = sumNV + total_force - \
             (pressure_new * (density_one - density_two) * phi_grad * 0.5) / rho_new
         usq_new = jnp.sum(jnp.square(u_new))
         pressure_new = (sumN / 3.0 - weights[0] * usq_new * 0.5 -
-                    (1 - phi_weights[0]) / 3.0) / (1 - weights[0])
+                        (1 - phi_weights[0]) / 3.0) / (1 - weights[0])
 
     interface_force_new = total_force - pressure_new * \
         (density_one - density_two) * phi_grad
-    
+
     rho = jnp.where(obs, rho_old, rho_new)
     u = jnp.where(obs, u_old, u_new)
     pressure = jnp.where(obs, pressure_old, pressure_new)
-    interface_force = jnp.where(obs, jnp.zeros(interface_force_new.shape), interface_force_new)
+    interface_force = jnp.where(obs,
+                                jnp.zeros(interface_force_new.shape),
+                                interface_force_new)
 
     return rho, u, pressure, interface_force
 
@@ -408,8 +411,8 @@ def compute_segregation(
     N_eq = eq_dist(cXYs, weights, phi_weights, pressure, u)
 
     phigrad_dot_c = jnp.sum(phi_grad * cXYs, axis=1)
-    seg_term = (2.0 / width) * (1.0 - phase_field) * \
-        phase_field * (phigrad_dot_c / phi_mag) * N_eq
+    seg_term = (2.0 / width) * (1.0 - phase_field) * phase_field * \
+        (phigrad_dot_c / phi_mag) * N_eq
 
     seg_term = jnp.where(phi_mag == 0.0, 0.0, seg_term)
 
@@ -458,8 +461,8 @@ def compute_propagation(
     dst_obs = jnp.stack(dst_obs)
     dst_obs_vel = jnp.stack(dst_obs_vel)
 
-    N_invert = N_new[jnp.array([0, 3, 4, 1, 2, 7, 8, 5, 6])]\
-          + 6.0 * jnp.einsum("k,kv,kijv->kij", weights, cXYs, dst_obs_vel)
+    N_invert = N_new[jnp.array([0, 3, 4, 1, 2, 7, 8, 5, 6])] + 6.0 * \
+        jnp.einsum("k,kv,kijv->kij", weights, cXYs, dst_obs_vel)
     f_invert = f_new[jnp.array([0, 3, 4, 1, 2, 7, 8, 5, 6])]
 
     N = jnp.where(dst_obs, N_invert, N_dst)

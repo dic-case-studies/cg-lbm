@@ -4,6 +4,7 @@ from jax import numpy as jnp
 import cglbm.test_utils as test_utils
 from cglbm.lbm import *
 
+import numpy as np
 from einops import rearrange
 from cglbm.test_utils import ParquetIOHelper
 
@@ -26,7 +27,7 @@ class LBMSnapshotTest(absltest.TestCase):
         expected = output_helper.get("neq", GRID_3D_SHAPE, "i j k -> k i j")
 
         actual_d = grid_eq_dist(system.cXYs, system.weights,
-                              system.phi_weights, pressure, u)
+                                system.phi_weights, pressure, u)
         actual = jax.device_get(actual_d)
 
         self.assertTrue(np.allclose(actual, expected))
@@ -74,7 +75,8 @@ class LBMSnapshotTest(absltest.TestCase):
 
 
     def test_compute_phi_grad(self):
-        # NOTE: phi_grad output has difference in precision, hence doing np.allclose with 1e-7 precision
+        # NOTE: phi_grad output has difference in precision, hence doing
+        # np.allclose with 1e-7 precision
         system = test_utils.load_test_config("params.ini")
         GRID_SHAPE = (system.LY, system.LX)
         GRID_3D_SHAPE = (system.LY, system.LX, system.NL)
@@ -83,12 +85,14 @@ class LBMSnapshotTest(absltest.TestCase):
         expected_path = 'snapshot_compute_phi_grad/compute_phi_grad_output.parquet'
 
         input_helper = ParquetIOHelper(input_path).read()
-        dst_phase_field = input_helper.get("dst_phase_field", GRID_3D_SHAPE, "i j k -> k i j")
+        dst_phase_field = input_helper.get(
+            "dst_phase_field", GRID_3D_SHAPE, "i j k -> k i j")
 
         output_helper = ParquetIOHelper(expected_path).read()
         expected_phi_grad_x = output_helper.get("phi_grad_x", GRID_SHAPE)
         expected_phi_grad_y = output_helper.get("phi_grad_y", GRID_SHAPE)
-        expected = rearrange(np.stack([expected_phi_grad_x, expected_phi_grad_y]), "v i j -> i j v")
+        expected = rearrange(np.stack([expected_phi_grad_x, expected_phi_grad_y]),
+                             "v i j -> i j v")
 
         actual_d = compute_phi_grad(system.cXYs, system.weights, dst_phase_field)
         actual = jax.device_get(actual_d)
@@ -111,22 +115,30 @@ class LBMSnapshotTest(absltest.TestCase):
         phi_grad_x = surface_tension_input_helper.get("phi_grad_x", GRID_SHAPE)
         phi_grad_y = surface_tension_input_helper.get("phi_grad_y", GRID_SHAPE)
         phi_grad = rearrange(jnp.stack([phi_grad_x, phi_grad_y]), "v i j -> i j v")
-        dst_phase_field = dst_phase_field_helper.get("dst_phase_field", GRID_3D_SHAPE, "i j k -> k i j")
+        dst_phase_field = dst_phase_field_helper.get("dst_phase_field", GRID_3D_SHAPE,
+                                                     "i j k -> k i j")
 
         output_helper = ParquetIOHelper(expected_path).read()
         expected_curvature_force_x = output_helper.get("curvature_force_x", GRID_SHAPE)
         expected_curvature_force_y = output_helper.get("curvature_force_y", GRID_SHAPE)
-        expected = rearrange(np.stack([expected_curvature_force_x, expected_curvature_force_y]), "v i j -> i j v")
+        expected = rearrange(np.stack([expected_curvature_force_x, expected_curvature_force_y]),
+                             "v i j -> i j v")
 
-        actual_d = compute_surface_tension_force(system.surface_tension, system.width, system.weights,
-                                                 phase_field, dst_phase_field, phi_grad)
+        actual_d = compute_surface_tension_force(
+            system.surface_tension,
+            system.width,
+            system.weights,
+            phase_field,
+            dst_phase_field,
+            phi_grad)
         actual = jax.device_get(actual_d)
 
         self.assertTrue(np.allclose(actual, expected))
 
 
     def test_compute_mom(self):
-        # NOTE: mom output has difference in precision, hence doing np.allclose with 1e-7 precision
+        # NOTE: mom output has difference in precision, hence doing np.allclose
+        # with 1e-7 precision
         system = test_utils.load_test_config("params.ini")
         GRID_SHAPE = (system.LY, system.LX)
         GRID_3D_SHAPE = (system.LY, system.LX, system.NL)
@@ -151,7 +163,8 @@ class LBMSnapshotTest(absltest.TestCase):
         expected_mom = output_3d_helper.get("mom", GRID_3D_SHAPE)
         expected_mom_eq = output_3d_helper.get("mom_eq", GRID_3D_SHAPE)
 
-        actual_d = compute_mom(system.kin_visc_one, system.kin_visc_two, system.M_D2Q9, u, pressure, phase_field, N)
+        actual_d = compute_mom(system.kin_visc_one, system.kin_visc_two, system.M_D2Q9, u,
+                               pressure, phase_field, N)
         actual = jax.device_get(actual_d)
 
         self.assertTrue(np.allclose(actual[0], expected_mom, atol=1e-7))
@@ -182,10 +195,18 @@ class LBMSnapshotTest(absltest.TestCase):
         output_helper = ParquetIOHelper(expected_2d_path).read()
         expected_visc_force_x = output_helper.get("viscous_force_x", GRID_SHAPE)
         expected_visc_force_y = output_helper.get("viscous_force_y", GRID_SHAPE)
-        expected = rearrange(np.stack([expected_visc_force_x, expected_visc_force_y]), "v i j -> i j v")
+        expected = rearrange(
+            np.stack([expected_visc_force_x, expected_visc_force_y]), "v i j -> i j v")
 
-        actual_d = compute_viscosity_correction(system.invM_D2Q9, system.cMs, system.density_one,
-                                                system.density_two, phi_grad, kin_visc_local, mom, mom_eq)
+        actual_d = compute_viscosity_correction(
+            system.invM_D2Q9,
+            system.cMs,
+            system.density_one,
+            system.density_two,
+            phi_grad,
+            kin_visc_local,
+            mom,
+            mom_eq)
         actual = jax.device_get(actual_d)
 
         self.assertTrue(np.allclose(actual, expected))
@@ -203,20 +224,26 @@ class LBMSnapshotTest(absltest.TestCase):
         curvature_force_input_helper = ParquetIOHelper(input_curvature_force_path).read()
         viscous_force_input_helper = ParquetIOHelper(input_viscous_force_path).read()
         rho_input_helper = ParquetIOHelper(input_rho_path).read()
-        curvature_force_x = curvature_force_input_helper.get("curvature_force_x", GRID_SHAPE)
-        curvature_force_y = curvature_force_input_helper.get("curvature_force_y", GRID_SHAPE)
-        curvature_force = rearrange(jnp.stack([curvature_force_x, curvature_force_y]), "v i j -> i j v")
+        curvature_force_x = curvature_force_input_helper.get(
+            "curvature_force_x", GRID_SHAPE)
+        curvature_force_y = curvature_force_input_helper.get(
+            "curvature_force_y", GRID_SHAPE)
+        curvature_force = rearrange(jnp.stack([curvature_force_x, curvature_force_y]),
+                                    "v i j -> i j v")
         viscous_force_x = viscous_force_input_helper.get("viscous_force_x", GRID_SHAPE)
         viscous_force_x = viscous_force_input_helper.get("viscous_force_y", GRID_SHAPE)
-        viscous_force = rearrange(jnp.stack([viscous_force_x, viscous_force_x]), "v i j -> i j v")
+        viscous_force = rearrange(
+            jnp.stack([viscous_force_x, viscous_force_x]), "v i j -> i j v")
         rho = rho_input_helper.get("rho", GRID_SHAPE)
 
         output_helper = ParquetIOHelper(expected_path).read()
-        expected_total_force_x = output_helper.get("total_force_x",GRID_SHAPE)
-        expected_total_force_y = output_helper.get("total_force_y",GRID_SHAPE)
-        expected = rearrange(np.stack([expected_total_force_x, expected_total_force_y]), "v i j -> i j v")
+        expected_total_force_x = output_helper.get("total_force_x", GRID_SHAPE)
+        expected_total_force_y = output_helper.get("total_force_y", GRID_SHAPE)
+        expected = rearrange(np.stack([expected_total_force_x, expected_total_force_y]),
+                             "v i j -> i j v")
 
-        actual_d = compute_total_force(system.gravityX, system.gravityY, curvature_force, viscous_force, rho)
+        actual_d = compute_total_force(system.gravityX, system.gravityY, curvature_force,
+                                       viscous_force, rho)
         actual = jax.device_get(actual_d)
 
         self.assertTrue(np.allclose(actual, expected))
@@ -242,7 +269,8 @@ class LBMSnapshotTest(absltest.TestCase):
         kin_visc_local = collision_2d_input_helper.get("kin_visc_local", GRID_SHAPE)
         interface_force_x = collision_2d_input_helper.get("interface_force_x", GRID_SHAPE)
         interface_force_y = collision_2d_input_helper.get("interface_force_y", GRID_SHAPE)
-        interface_force = rearrange(jnp.stack([interface_force_x, interface_force_y]), "v i j -> i j v")
+        interface_force = rearrange(
+            jnp.stack([interface_force_x, interface_force_y]), "v i j -> i j v")
         mom = collision_3d_input_helper.get("mom", GRID_3D_SHAPE)
         mom_eq = collision_3d_input_helper.get("mom_eq", GRID_3D_SHAPE)
         N = collision_3d_input_helper.get("N", GRID_3D_SHAPE, "i j k -> k i j")
@@ -250,14 +278,16 @@ class LBMSnapshotTest(absltest.TestCase):
         output_helper = ParquetIOHelper(expected_path).read()
         expected = output_helper.get("N_new", GRID_3D_SHAPE, "i j k -> k i j")
 
-        actual_d = compute_collision(system.invM_D2Q9, obs, mom, mom_eq, kin_visc_local, interface_force, rho, N)
+        actual_d = compute_collision(system.invM_D2Q9, obs, mom, mom_eq, kin_visc_local,
+                                     interface_force, rho, N)
         actual = jax.device_get(actual_d)
 
-        self.assertTrue(np.allclose(actual[:,:,2:-2], expected[:,:,2:-2]))
+        self.assertTrue(np.allclose(actual[:, :, 2:-2], expected[:, :, 2:-2]))
 
 
     def test_compute_density_velocity_pressure(self):
-        # NOTE: velocity (u) output has difference in precision, hence doing np.allclose with 1e-4 precision
+        # NOTE: velocity (u) output has difference in precision, hence doing
+        # np.allclose with 1e-4 precision
         system = test_utils.load_test_config("params.ini")
         GRID_SHAPE = (system.LY, system.LX)
         GRID_3D_SHAPE = (system.LY, system.LX, system.NL)
@@ -284,12 +314,13 @@ class LBMSnapshotTest(absltest.TestCase):
         phi_grad = rearrange(jnp.stack([phi_grad_x, phi_grad_y]), "v i j -> i j v")
         total_force_x = total_force_input_helper.get("total_force_x", GRID_SHAPE)
         total_force_y = total_force_input_helper.get("total_force_y", GRID_SHAPE)
-        total_force = rearrange(jnp.stack([total_force_x, total_force_y]), "v i j -> i j v")
+        total_force = rearrange(
+            jnp.stack([total_force_x, total_force_y]), "v i j -> i j v")
         rho = input_2d_helper.get("rho", GRID_SHAPE)
         pressure = input_2d_helper.get("pressure", GRID_SHAPE)
         u_x = input_2d_helper.get("u_x", GRID_SHAPE)
         u_y = input_2d_helper.get("u_y", GRID_SHAPE)
-        u = rearrange(jnp.stack([u_x, u_y]),"v i j -> i j v")
+        u = rearrange(jnp.stack([u_x, u_y]), "v i j -> i j v")
         obs = obstacle_input_helper.get("obs", GRID_SHAPE)
         N = input_3d_helper.get("N", GRID_3D_SHAPE, "i j k -> k i j")
 
@@ -301,17 +332,32 @@ class LBMSnapshotTest(absltest.TestCase):
         expected_pressure = output_helper.get("pressure", GRID_SHAPE)
         expected_interface_force_x = output_helper.get("interface_force_x", GRID_SHAPE)
         expected_interface_force_y = output_helper.get("interface_force_y", GRID_SHAPE)
-        expected_interface_force = rearrange(jnp.stack([expected_interface_force_x, expected_interface_force_y]), "v i j -> i j v")
+        expected_interface_force = rearrange(
+            jnp.stack([expected_interface_force_x, expected_interface_force_y]),
+            "v i j -> i j v"
+        )
 
-        actual_d = compute_density_velocity_pressure(system.density_one, system.density_two, system.cXs,
-                                                     system.cYs, system.weights, system.phi_weights, obs,
-                                                     pressure, u, rho, phase_field, phi_grad, N, total_force)
+        actual_d = compute_density_velocity_pressure(
+            system.density_one,
+            system.density_two,
+            system.cXs,
+            system.cYs,
+            system.weights,
+            system.phi_weights,
+            obs,
+            pressure,
+            u,
+            rho,
+            phase_field,
+            phi_grad,
+            N,
+            total_force)
         actual = jax.device_get(actual_d)
 
-        self.assertTrue(np.allclose(actual[0],expected_rho))
-        self.assertTrue(np.allclose(actual[1],expected_u, atol=1e-4))
-        self.assertTrue(np.allclose(actual[2],expected_pressure))
-        self.assertTrue(np.allclose(actual[3],expected_interface_force))
+        self.assertTrue(np.allclose(actual[0], expected_rho))
+        self.assertTrue(np.allclose(actual[1], expected_u, atol=1e-4))
+        self.assertTrue(np.allclose(actual[2], expected_pressure))
+        self.assertTrue(np.allclose(actual[3], expected_interface_force))
 
 
     def test_compute_segregation(self):
@@ -338,8 +384,16 @@ class LBMSnapshotTest(absltest.TestCase):
         output_helper = ParquetIOHelper(expected_path).read()
         expected = output_helper.get("f_new", GRID_3D_SHAPE, "i j k -> k i j")
 
-        actual_d = compute_segregation(system.width, system.cXYs, system.weights, system.phi_weights,
-                                       phase_field, phi_grad, pressure, u, N_new)
+        actual_d = compute_segregation(
+            system.width,
+            system.cXYs,
+            system.weights,
+            system.phi_weights,
+            phase_field,
+            phi_grad,
+            pressure,
+            u,
+            N_new)
         actual = jax.device_get(actual_d)
 
         self.assertTrue(np.allclose(actual, expected))
@@ -372,12 +426,19 @@ class LBMSnapshotTest(absltest.TestCase):
         expected_N = output_helper.get("N", GRID_3D_SHAPE, "i j k -> k i j")
         expected_f = output_helper.get("f", GRID_3D_SHAPE, "i j k -> k i j")
 
-        actual_d = compute_propagation(system.cXs, system.cYs, system.cXYs, system.weights,
-                                       obs, obs_vel, N_new, f_new)
+        actual_d = compute_propagation(
+            system.cXs,
+            system.cYs,
+            system.cXYs,
+            system.weights,
+            obs,
+            obs_vel,
+            N_new,
+            f_new)
         actual = jax.device_get(actual_d)
 
-        self.assertTrue(np.allclose(actual[0][:,:,2:-2], expected_N[:,:,2:-2]))
-        self.assertTrue(np.allclose(actual[1][:,:,2:-2], expected_f[:,:,2:-2]))
+        self.assertTrue(np.allclose(actual[0][:, :, 2:-2], expected_N[:, :, 2:-2]))
+        self.assertTrue(np.allclose(actual[1][:, :, 2:-2], expected_f[:, :, 2:-2]))
 
 
 if __name__ == "__main__":
