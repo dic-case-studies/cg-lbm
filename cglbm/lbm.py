@@ -403,13 +403,10 @@ def compute_segregation(
     Returns:
         f_new: (k, X, Y,)
     """
-    phi_mag = jnp.sqrt(jnp.sum(jnp.square(phi_grad)))# + 1.e-37
+    phi_mag = jnp.sqrt(jnp.sum(jnp.square(phi_grad)))
 
-    # (phigrad_dot_c / phi_mag) is nan for non interface region
-
-    # [k]
     N_eq = eq_dist(cXYs, weights, phi_weights, pressure, u)
-    # 9, 2
+
     phigrad_dot_c = jnp.sum(phi_grad * cXYs, axis=1)
     seg_term = (2.0 / width) * (1.0 - phase_field) * \
         phase_field * (phigrad_dot_c / phi_mag) * N_eq
@@ -418,81 +415,6 @@ def compute_segregation(
 
     f_new = phase_field * N_new + seg_term
     return f_new
-
-
-@jit
-@partial(vmap, in_axes=(None, None, None, 0, 0, 1, 1, 1, 1), out_axes=1)
-@partial(vmap, in_axes=(None, None, None, 0, 0, 1, 1, 1, 1), out_axes=1)
-def handle_obstacle(
-    cXs: jax.Array,
-    cYs: jax.Array,
-    weights: jax.Array,
-    obs: jax.Array,
-    obsVel: jax.Array,
-    f_new: jax.Array,
-    f_new_dst: jax.Array,
-    N_new: jax.Array,
-    N_new_dst: jax.Array
-):
-    """
-    Args:
-        cXs: (k,)
-        cYs: (k,)
-        weights: (k,)
-        obs: (X, Y)
-        obsVel: (X, Y, 2,)
-        f_new: (k, X, Y,)
-        f_new_dst: (k, X, Y,)
-        N_new: (k, X, Y,)
-        N_new_dst: (k, X, Y,)
-
-    Returns:
-        N: (k, X, Y,)
-        f: (k, X, Y,)
-    """
-    N_invert = N_new[np.array([0, 3, 4, 1, 2, 7, 8, 5, 6])] + \
-        6.0 * weights * (cXs * obsVel[0] + cYs * obsVel[1])
-    f_invert = f_new[np.array([0, 3, 4, 1, 2, 7, 8, 5, 6])]
-
-    f = lax.select(obs, f_invert, f_new_dst)
-    N = lax.select(obs, N_invert, N_new_dst)
-    return N, f
-
-
-# @jit
-# def compute_propagation(
-#     cXs: jax.Array,
-#     cYs: jax.Array,
-#     weights: jax.Array,
-#     obs: jax.Array,
-#     obsVel: jax.Array,
-#     N_new: jax.Array,
-#     f_new: jax.Array
-# ):
-#     """
-#     Args:
-#         cXs: (k,)
-#         cYs: (k,)
-#         weights: (k,)
-#         obs: (X, Y)
-#         obsVel: (X, Y, 2,)
-#         N_new: (k, X, Y,)
-#         f_new: (k, X, Y,)
-
-#     Returns:
-#         N: (k, X, Y,)
-#         f: (k, X, Y,)
-#     """
-#     N = []
-#     f = []
-#     for i, cx, cy in zip(jnp.arange(9), cXs, cYs):
-#         N.append(jnp.roll(N_new[i], (-cx, -cy), axis=(0, 1)))
-#         f.append(jnp.roll(f_new[i], (-cx, -cy), axis=(0, 1)))
-
-#     N_dst = jnp.stack(N)
-#     f_dst = jnp.stack(f)
-
-#     return handle_obstacle(cXs, cYs, weights, obs, obsVel, f_new, f_dst, N_new, N_dst)
 
 
 @jit
@@ -542,8 +464,5 @@ def compute_propagation(
 
     N = jnp.where(dst_obs, N_invert, N_dst)
     f = jnp.where(dst_obs, f_invert, f_dst)
-
-    # N = jnp.where(obs, N_old, N)
-    # f = jnp.where(obs, f_old, f)
 
     return N, f

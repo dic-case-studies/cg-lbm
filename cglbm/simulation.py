@@ -138,7 +138,6 @@ def multi_step_simulation(system: System, state: State, nr_iterations: int, nr_s
 
     results = [{
         "u": state["u"],
-        "N": state["N"],
         "f": state["f"]
     }]
 
@@ -146,7 +145,6 @@ def multi_step_simulation(system: System, state: State, nr_iterations: int, nr_s
         state = multi_step_simulation_block(system, state, save_interval)
         results.append({
             "u": state["u"],
-            "N": state["N"],
             "f": state["f"]
         })
 

@@ -1,6 +1,4 @@
 import configparser
-import jax
-from jax import numpy as jnp
 from cglbm.environment import System
 
 # TODO: This should throw an error if file not found

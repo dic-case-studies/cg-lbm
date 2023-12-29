@@ -381,6 +381,5 @@ class LBMSnapshotTest(absltest.TestCase):
 
 
 if __name__ == "__main__":
-    # jax.config.update("jax_enable_x64", True)
     # jax.config.update("jax_disable_jit", True) # for debugging
     absltest.main()

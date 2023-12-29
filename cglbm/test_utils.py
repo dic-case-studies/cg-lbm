@@ -6,7 +6,6 @@ from etils import epath
 
 from cglbm.environment import System
 import cglbm.config as cfg
-import pandas as pd
 from einops import rearrange
 
 
@@ -58,6 +57,7 @@ class ParquetIOHelper:
 
 
     def read(self):
+        import pandas as pd
         df = pd.read_parquet(self.filepath)
         cols = df.columns
         values = df[df.columns].to_numpy().transpose()
