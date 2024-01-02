@@ -10,13 +10,13 @@ from jax import numpy as jnp
 def eq_dist_phase_field(cXYs, weights, phi, u):
     """
     Args:
-        cXYs: (k, 2,)
+        cXYs: (k,v,)
         weights: (k,)
-        phi: (LX, LY,)
-        u: (LX, LY, 2,)
+        phi: (i,j,)
+        u: (i,j,v,)
 
     Returns:
-        f: (k, LX, LY,)
+        f: (k,i,j,)
     """
     cu = jnp.sum(u * cXYs)
     u2 = jnp.sum(jnp.square(u))
@@ -27,11 +27,11 @@ def eq_dist_phase_field(cXYs, weights, phi, u):
 def eq_dist(cXYs, weights, phi_weights, pressure, u):
     """
     Args:
-        cXYs: (k, 2,)
+        cXYs: (k,v,)
         weights: (k,)
         phi_weights: (k,)
-        pressure: (1,)
-        u: (2,)
+        pressure: ()
+        u: (v,)
 
     Returns:
         neq: (k,)
@@ -57,10 +57,10 @@ grid_eq_dist = jit(vmap(_eq_dist, in_axes=(None, None, None, 0, 0), out_axes=1))
 def compute_phase_field(f: jax.Array):
     """
     Args:
-        f: (k, LX, LY,)
+        f: (k,i,j,)
 
     Returns:
-        phase_field: (LX,LY,)
+        phase_field: (i,j,)
     """
     return jnp.einsum("kij->ij", f)
 
@@ -71,10 +71,10 @@ def compute_dst_phase_field(cXs: jax.Array, cYs: jax.Array, phase_field: jax.Arr
     Args:
         cXs: (k,)
         cYs: (k,)
-        phase_field: (LX, LY,)
+        phase_field: (i,j,)
 
     Returns:
-        dst_phase_field: (k, LX, LY,)
+        dst_phase_field: (k,i,j,)
     """
     dst_phase_field = []
 
@@ -91,14 +91,14 @@ def compute_dst_phase_field(cXs: jax.Array, cYs: jax.Array, phase_field: jax.Arr
 def compute_phi_grad(cXYs: jax.Array, weights: jax.Array, dst_phase_field: jax.Array):
     """
     Args:
-        cXYs: (k, 2,)
+        cXYs: (k,v,)
         weights: (k,)
-        dst_phase_field: (k, LX, LY,)
+        dst_phase_field: (k,i,j,)
 
     Returns:
-        phi_grad: (LX, LY, 2,)
+        phi_grad: (i,j,v,)
     """
-    phi_grad = 3 * jnp.einsum("k,k,kx->x", weights, dst_phase_field, cXYs)
+    phi_grad = 3 * jnp.einsum("k,k,kv->v", weights, dst_phase_field, cXYs)
 
     return phi_grad
 
@@ -119,12 +119,12 @@ def compute_surface_tension_force(
         surface_tension: ()
         width: ()
         weights: (k,)
-        phase_field: (X, Y,)
-        dst_phase_field: (k, X, Y,)
-        phi_grad: (X, Y, 2,)
+        phase_field: (i,j,)
+        dst_phase_field: (k,i,j,)
+        phi_grad: (i,j,v,)
 
     Returns:
-        curvature_force: (X, Y, 2,)
+        curvature_force: (i,j,v,)
     """
     phase_diff = dst_phase_field - phase_field
     laplacian_loc = 6 * jnp.einsum("k,k", phase_diff, weights)
@@ -152,18 +152,18 @@ def compute_mom(
 ):
     """
     Args:
-        kin_visc_one: float32
-        kin_visc_two: float32
+        kin_visc_one: ()
+        kin_visc_two: ()
         M_D2Q9: (k,k,)
-        u: (X,Y,2,)
-        pressure: (X,Y,)
-        phase_field: (X,Y,)
-        N: (k,X,Y)
+        u: (i,j,v,)
+        pressure: (i,j,)
+        phase_field: (i,j,)
+        N: (k,i,j,)
 
     Returns:
-        mom: ((X,Y,k)
-        mom_eq: (X,Y,k)
-        kin_visc_local: (X,Y))
+        mom: (i,j,k)
+        mom_eq: (i,j,k)
+        kin_visc_local: (i,j,)
     """
     alpha = 4.0 / 9.0
     u2 = u[0] * u[0] + u[1] * u[1]
@@ -202,16 +202,16 @@ def compute_viscosity_correction(
     """
     Args:
         invM_D2Q9: (k,k,)
-        cMs: (k,k,)
-        density_one: jnp.float32
-        density_two: jnp.float32
-        phi_grad: (X,Y,2,)
-        kin_visc_local: (X,Y,)
-        mom: (X,Y,9,)
-        mom_eq: (X,Y,9,)
+        cMs: (k,m,n,)
+        density_one: ()
+        density_two: ()
+        phi_grad: (i,j,v,)
+        kin_visc_local: (i,j,)
+        mom: (i,j,k,)
+        mom_eq: (i,j,k,)
 
     Returns:
-        viscous_force: (X,Y,2,)
+        viscous_force: (i,j,v,)
     """
     tauL = 0.5 + 3 * kin_visc_local
 
@@ -224,7 +224,7 @@ def compute_viscosity_correction(
 
     viscous_force = -3.0 * kin_visc_local * \
         (density_one - density_two) * \
-        jnp.einsum('kmn, k, n -> m', cMs, mom_diff, phi_grad)
+        jnp.einsum('kmn,k,n->m', cMs, mom_diff, phi_grad)
 
     return viscous_force
 
@@ -243,12 +243,12 @@ def compute_total_force(
     Args:
         gravityX: ()
         gravityY: ()
-        curvature_force: (X,Y,2,)
-        viscous_force: (X,Y,2,)
-        rho: (X,Y,)
+        curvature_force: (i,j,v,)
+        viscous_force: (i,j,v,)
+        rho: (i,j,)
 
     Returns:
-        total_force: (X,Y,2,)
+        total_force: (i,j,v,)
     """
     rest_force = jnp.stack([rho * gravityX, rho * gravityY])
     return rest_force + curvature_force + viscous_force
@@ -283,20 +283,20 @@ def compute_density_velocity_pressure(
         cYs: (k,)
         weights: (k,)
         phi_weights: (k,)
-        obs: (X,Y,),
-        pressure: (X,Y,)
-        u: (X,Y,2),
-        rho: (X,Y,),
-        phase_field: (X,Y,)
-        phi_grad: (X,Y,2,)
-        N: (k,X,Y,)
-        total_force: (X,Y,2,)
+        obs: (i,j,)
+        pressure: (i,j,)
+        u: (i,j,v,)
+        rho: (i,j,)
+        phase_field: (i,j,)
+        phi_grad: (i,j,v,)
+        N: (k,i,j,)
+        total_force: (i,j,v,)
 
     Returns:
-        rho: (X,Y,)
-        u: (X,Y,2)
-        pressure: (X,Y,)
-        interface_force: (X,Y,2,)
+        rho: (i,j,)
+        u: (i,j,v,)
+        pressure: (i,j,)
+        interface_force: (i,j,v,)
     """
 
     sumNX = jnp.dot(N, cXs)
@@ -345,16 +345,16 @@ def compute_collision(
     """
     Args:
         invM_D2Q9: (k,k,)
-        obs: (X,Y,)
-        mom: (X,Y,k,)
-        mom_eq: (X,Y,k,)
-        kin_visc_local: (X,Y,)
-        interface_force: (X,Y,2,)
-        rho: (X,Y,)
-        N: (k,X,Y,)
+        obs: (i,j,)
+        mom: (i,j,k,)
+        mom_eq: (i,j,k,)
+        kin_visc_local: (i,j,)
+        interface_force: (i,j,v,)
+        rho: (i,j,)
+        N: (k,i,j,)
 
     Returns:
-        N_new: (k,X,Y,)
+        N_new: (k,i,j,)
     """
     tauL = 0.5 + 3 * kin_visc_local
 
@@ -394,17 +394,17 @@ def compute_segregation(
     """
     Args:
         width: ()
-        cXYs: (k, 2,)
+        cXYs: (k,v,)
         weights: (k,)
         phi_weights: (k,)
-        phase_field: (X, Y,)
-        phi_grad: (X, Y, 2,)
-        pressure: (X, Y,)
-        u: (X, Y, 2,)
-        N_new: (k, X, Y,)
+        phase_field: (i,j,)
+        phi_grad: (i,j,v,)
+        pressure: (i,j,)
+        u: (i,j,v,)
+        N_new: (k,i,j,)
 
     Returns:
-        f_new: (k, X, Y,)
+        f_new: (k,i,j,)
     """
     phi_mag = jnp.sqrt(jnp.sum(jnp.square(phi_grad)))
 
@@ -435,17 +435,18 @@ def compute_propagation(
     Args:
         cXs: (k,)
         cYs: (k,)
-        cXYs: (k,2,)
+        cXYs: (k,v,)
         weights: (k,)
-        obs: (X,Y,)
-        obsVel: (X,Y,2,)
-        N_new: (k,X,Y,)
-        f_new: (k,X,Y,)
+        obs: (i,j,)
+        obsVel: (i,j,v,)
+        N_new: (k,i,j,)
+        f_new: (k,i,j,)
 
     Returns:
-        N: (k,X,Y,)
-        f: (k,X,Y,)
+        N: (k,i,j,)
+        f: (k,i,j,)
     """
+    # TODO: use state.N and state.f for boundary cases
     N_dst = []
     f_dst = []
     dst_obs = []
