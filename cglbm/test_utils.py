@@ -16,13 +16,6 @@ def load_test_config(path: str) -> System:
     return sys
 
 
-def load_sandbox_config(path: str) -> System:
-    full_path = epath.resource_path("cglbm") / f'sandbox-configs/{path}'
-    sys = cfg.load_config(full_path)
-
-    return sys
-
-
 # Note: We are assuming the function passed is already JITed
 # Note: The result can fluxtuate if observing something < 50us
 # Note: We could use python's timeit

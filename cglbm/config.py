@@ -1,5 +1,6 @@
 import configparser
 from cglbm.environment import System
+from etils import epath
 
 # TODO: This should throw an error if file not found
 
@@ -51,19 +52,11 @@ def load_config(config_file: str) -> System:
     """Loads a system from a given config file"""
     config = SimulationParams(config_file)
 
-    LX = config.LX
-    LY = config.LY
-
-    density_one = config.density_one
-    density_two = config.density_two
-
-    grid_shape = (LY, LX)
-
     from cglbm.d2q9 import NL, alpha, cXs, cYs, cXYs, cMs, weights, phi_weights, M_D2Q9, invM_D2Q9
 
     return System(
-        LX=LX,
-        LY=LY,
+        LX=config.LX,
+        LY=config.LY,
         NL=NL,
         kin_visc_one=config.kin_visc_one,
         kin_visc_two=config.kin_visc_two,
@@ -87,3 +80,10 @@ def load_config(config_file: str) -> System:
         M_D2Q9=M_D2Q9,
         invM_D2Q9=invM_D2Q9
     )
+
+
+def load_sandbox_config(path: str) -> System:
+    full_path = epath.resource_path("cglbm") / f'sandbox-configs/{path}'
+    sys = load_config(full_path)
+
+    return sys
