@@ -7,7 +7,7 @@ cXs = jnp.array([0, 1, 0, -1, 0, 1, -1, -1, 1], dtype=jnp.int32)
 cYs = jnp.array([0, 0, 1, 0, -1, 1, 1, -1, -1], dtype=jnp.int32)
 cXYs = jnp.array([(0, 0), (1, 0), (0, 1), (-1, 0), (0, -1),
                 (1, 1), (-1, 1), (-1, -1), (1, -1)])
-cMs = jnp.einsum('ki,kj->kij', cXYs, cXYs)
+cMs = jnp.einsum('km,kn->kmn', cXYs, cXYs)
 
 weights = jnp.array([4.0 / 9.0,  1.0 / 9.0,  1.0 / 9.0,  1.0 / 9.0,
                     1.0 / 9.0, 1.0 / 36.0, 1.0 / 36.0, 1.0 / 36.0, 1.0 / 36.0])

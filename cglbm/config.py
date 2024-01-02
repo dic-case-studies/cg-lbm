@@ -1,9 +1,10 @@
 import configparser
-import jax
-from jax import numpy as jnp
 from cglbm.environment import System
+from etils import epath
 
 # TODO: This should throw an error if file not found
+
+
 class SimulationParams:
     def __init__(self, config_file):
         self.parse_params(config_file)
@@ -51,39 +52,38 @@ def load_config(config_file: str) -> System:
     """Loads a system from a given config file"""
     config = SimulationParams(config_file)
 
-    LX = config.LX
-    LY = config.LY
-
-    density_one = config.density_one
-    density_two = config.density_two
-
-    grid_shape = (LY, LX)
-
     from cglbm.d2q9 import NL, alpha, cXs, cYs, cXYs, cMs, weights, phi_weights, M_D2Q9, invM_D2Q9
 
     return System(
-        LX = LX,
-        LY = LY,
-        NL = NL,
-        kin_visc_one = config.kin_visc_one,
-        kin_visc_two = config.kin_visc_two,
-        density_one = config.density_one,
-        density_two = config.density_two,
-        gravityX = config.gravityX,
-        gravityY = config.gravityY,
-        width = config.width,
-        surface_tension = config.surface_tension,
-        ref_pressure = config.ref_pressure,
+        LX=config.LX,
+        LY=config.LY,
+        NL=NL,
+        kin_visc_one=config.kin_visc_one,
+        kin_visc_two=config.kin_visc_two,
+        density_one=config.density_one,
+        density_two=config.density_two,
+        gravityX=config.gravityX,
+        gravityY=config.gravityY,
+        width=config.width,
+        surface_tension=config.surface_tension,
+        ref_pressure=config.ref_pressure,
         # TODO: This has to be part of obstacle not be a part of config
-        uWallX = config.uWallX,
-        drop_radius = config.drop_radius,
-        alpha = alpha,
-        cXs = cXs,
-        cYs = cYs,
-        cXYs = cXYs,
-        cMs = cMs,
-        weights = weights,
-        phi_weights = phi_weights,
-        M_D2Q9 = M_D2Q9,
-        invM_D2Q9 = invM_D2Q9
+        uWallX=config.uWallX,
+        drop_radius=config.drop_radius,
+        alpha=alpha,
+        cXs=cXs,
+        cYs=cYs,
+        cXYs=cXYs,
+        cMs=cMs,
+        weights=weights,
+        phi_weights=phi_weights,
+        M_D2Q9=M_D2Q9,
+        invM_D2Q9=invM_D2Q9
     )
+
+
+def load_sandbox_config(path: str) -> System:
+    full_path = epath.resource_path("cglbm") / f'sandbox-configs/{path}'
+    sys = load_config(full_path)
+
+    return sys

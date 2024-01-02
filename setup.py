@@ -1,5 +1,6 @@
 """
-pip install -e .
+pip install cglbm -e . # For installing locally
+pip install "cglbm[develop]" -e . # For development purposes
 """
 
 from setuptools import find_packages
@@ -17,17 +18,21 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     install_requires=[
-        "absl-py",
         "chex",
         "jax",
         "jaxlib",
         "numpy",
-        "eutils",
-        "meshio",
-        "h5py"
+        "etils"
     ],
     extras_require={
-        "develop": ["pytest"],
+        "develop": [
+            "pytest",
+            "pyarrow"
+            "absl-py",
+            "meshio",
+            "h5py",
+            "pandas"
+        ],
     },
     classifiers=[
         "Intended Audience :: Developers",
@@ -38,4 +43,3 @@ setup(
     ],
     keywords="JAX Color Gradient Lattice Bolzman"
 )
-

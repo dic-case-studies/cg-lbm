@@ -1,15 +1,15 @@
 
 import jax
-from jax import vmap, jit
 from jax import numpy as jnp
 import time
 from etils import epath
 
 from cglbm.environment import System
 import cglbm.config as cfg
+from einops import rearrange
 
 
-def load_config(path: str) -> System:
+def load_test_config(path: str) -> System:
     full_path = epath.resource_path("cglbm") / f'test-data/{path}'
     sys = cfg.load_config(full_path)
 
@@ -48,3 +48,24 @@ def benchmark(
     return op_time
 
 # TODO: Create one more benchmark for simulation
+
+
+class ParquetIOHelper:
+    def __init__(self, filepath: str):
+        self.filepath = epath.resource_path("cglbm") / 'test-data' / filepath
+        self.data = {}
+
+
+    def read(self):
+        import pandas as pd
+        df = pd.read_parquet(self.filepath)
+        cols = df.columns
+        values = df[df.columns].to_numpy().transpose()
+        for i in range(len(cols)):
+            self.data[cols[i]] = values[i]
+        return self
+
+
+    def get(self, column_name, shape, arrange_pattern=None):
+        value = self.data[column_name].reshape(*shape)
+        return rearrange(value, arrange_pattern) if arrange_pattern else value
