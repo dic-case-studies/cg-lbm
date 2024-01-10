@@ -6,6 +6,8 @@ Based on `Subhedar, A. (2022). Color-gradient lattice Boltzmann model for immisc
 
 ## Testing
 
+First we need to install developer dependencies present in setup.py
+
 From the root directory run
 
 ```

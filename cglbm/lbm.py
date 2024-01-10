@@ -449,6 +449,7 @@ def compute_propagation(
     # TODO: use state.N and state.f for boundary cases
     N_dst = []
     f_dst = []
+    # TODO: dst_obs and dst_obs_vel can be calculated only once before start of iteration 0
     dst_obs = []
     dst_obs_vel = []
     for i, cx, cy in zip(jnp.arange(9), cXs, cYs):
