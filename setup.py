@@ -19,19 +19,22 @@ setup(
     include_package_data=True,
     install_requires=[
         "chex",
+        # Installation of jax should not be done from here
         "jax",
         "jaxlib",
         "numpy",
-        "etils"
+        "etils",
+        "importlib_resources"
     ],
     extras_require={
         "develop": [
-            "pytest",
-            "pyarrow"
             "absl-py",
-            "meshio",
+            "einops",
             "h5py",
-            "pandas"
+            "meshio",
+            "pandas",
+            "pyarrow",
+            "pytest"
         ],
     },
     classifiers=[
