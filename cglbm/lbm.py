@@ -310,8 +310,8 @@ def compute_density_velocity_pressure(
     pressure_new = pressure_old
 
     for _ in range(10):
-        u_new = sumNV + total_force - \
-            (pressure_new * (density_one - density_two) * phi_grad * 0.5) / rho_new
+        u_new = sumNV + ((total_force - \
+            pressure_new * (density_one - density_two) * phi_grad) * 0.5) / rho_new
         usq_new = jnp.sum(jnp.square(u_new))
         pressure_new = (sumN / 3.0 - weights[0] * usq_new * 0.5 -
                         (1 - phi_weights[0]) / 3.0) / (1 - weights[0])
