@@ -118,6 +118,7 @@ def simulation_step(system: System, state: State, idx: int) -> State:
 
     return state.replace(
         u=u,
+        phase_field=phase_field,
         pressure=pressure,
         rho=rho,
         N=N,
