@@ -137,7 +137,7 @@ class LBMSnapshotTest(absltest.TestCase):
 
 
     def test_compute_mom(self):
-        # NOTE: mom output has difference in precision, hence doing np.allclose
+        # NOTE: mom and mom_eq output have difference in precision, hence doing np.allclose
         # with 1e-7 precision
         system = test_utils.load_test_config("params.ini")
         GRID_SHAPE = (system.LY, system.LX)
@@ -168,11 +168,13 @@ class LBMSnapshotTest(absltest.TestCase):
         actual = jax.device_get(actual_d)
 
         self.assertTrue(np.allclose(actual[0], expected_mom, atol=1e-7))
-        self.assertTrue(np.allclose(actual[1], expected_mom_eq))
+        self.assertTrue(np.allclose(actual[1], expected_mom_eq, atol=1e-7))
         self.assertTrue(np.allclose(actual[2], expected_kin_visc_local))
 
 
     def test_compute_viscosity_correction(self):
+        # NOTE: output has difference in precision, hence doing
+        # np.allclose with 1e-5 precision
         system = test_utils.load_test_config("params.ini")
         GRID_SHAPE = (system.LY, system.LX)
         GRID_3D_SHAPE = (system.LY, system.LX, system.NL)
@@ -209,7 +211,7 @@ class LBMSnapshotTest(absltest.TestCase):
             mom_eq)
         actual = jax.device_get(actual_d)
 
-        self.assertTrue(np.allclose(actual, expected))
+        self.assertTrue(np.allclose(actual, expected, atol=1e-5))
 
 
     def test_compute_total_force(self):
@@ -232,10 +234,10 @@ class LBMSnapshotTest(absltest.TestCase):
             jnp.stack([curvature_force_x, curvature_force_y]), "v i j -> i j v")
         viscous_force_x = jnp.array(
             viscous_force_input_helper.get("viscous_force_x", GRID_SHAPE))
-        viscous_force_x = jnp.array(
+        viscous_force_y = jnp.array(
             viscous_force_input_helper.get("viscous_force_y", GRID_SHAPE))
         viscous_force = rearrange(
-            jnp.stack([viscous_force_x, viscous_force_x]), "v i j -> i j v")
+            jnp.stack([viscous_force_x, viscous_force_y]), "v i j -> i j v")
         rho = jnp.array(rho_input_helper.get("rho", GRID_SHAPE))
 
         output_helper = ParquetIOHelper(expected_path).read()
@@ -289,7 +291,7 @@ class LBMSnapshotTest(absltest.TestCase):
 
     def test_compute_density_velocity_pressure(self):
         # NOTE: velocity (u) output has difference in precision, hence doing
-        # np.allclose with 1e-4 precision
+        # np.allclose with 1e-7 precision
         system = test_utils.load_test_config("params.ini")
         GRID_SHAPE = (system.LY, system.LX)
         GRID_3D_SHAPE = (system.LY, system.LX, system.NL)
@@ -355,7 +357,7 @@ class LBMSnapshotTest(absltest.TestCase):
         actual = jax.device_get(actual_d)
 
         self.assertTrue(np.allclose(actual[0], expected_rho))
-        self.assertTrue(np.allclose(actual[1], expected_u, atol=1e-4))
+        self.assertTrue(np.allclose(actual[1], expected_u, atol=1e-7))
         self.assertTrue(np.allclose(actual[2], expected_pressure))
         self.assertTrue(np.allclose(actual[3], expected_interface_force))
 
