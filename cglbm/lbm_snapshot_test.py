@@ -8,6 +8,7 @@ import numpy as np
 from einops import rearrange
 from cglbm.test_utils import ParquetIOHelper
 
+# jax.config.update("jax_platforms", "cpu") # to force run on CPU
 
 class LBMSnapshotTest(absltest.TestCase):
     """
@@ -444,5 +445,4 @@ class LBMSnapshotTest(absltest.TestCase):
 
 
 if __name__ == "__main__":
-    # jax.config.update("jax_disable_jit", True) # for debugging
     absltest.main()

@@ -23,6 +23,7 @@ class State(Base):
     rho: jax.Array
     pressure: jax.Array
     u: jax.Array
+    phase_field: jax.Array
     # TODO: Obs and obs_velocity can be part of a separate class
     obs: jax.Array
     obs_velocity: jax.Array

@@ -118,6 +118,7 @@ def simulation_step(system: System, state: State, idx: int) -> State:
 
     return state.replace(
         u=u,
+        phase_field=phase_field,
         pressure=pressure,
         rho=rho,
         N=N,
@@ -138,14 +139,14 @@ def multi_step_simulation(system: System, state: State, nr_iterations: int, nr_s
 
     results = [{
         "u": state["u"],
-        "f": state["f"]
+        "phase_field": state["phase_field"]
     }]
 
     for _ in range(nr_snapshots):
         state = multi_step_simulation_block(system, state, save_interval)
         results.append({
             "u": state["u"],
-            "f": state["f"]
+            "phase_field": state["phase_field"]
         })
 
     # Receive the buffer from the Accelerator
