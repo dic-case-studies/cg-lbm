@@ -1,9 +1,10 @@
 from jax import jit, lax, tree_util
 import numpy as np  # We need numpy here where we transfer data from the GPU
+import orbax.checkpoint as ocp
 
 from cglbm.environment import System, State
 from cglbm.lbm import *
-
+from cglbm.utils import restore_state, validate_sim_params
 
 @jit
 def simulation_step(system: System, state: State, idx: int) -> State:
@@ -154,3 +155,39 @@ def multi_step_simulation(system: System, state: State, nr_iterations: int, nr_s
     return tree_util.tree_map(
         lambda *rs: np.stack([np.array(r) for r in rs]),
         *results)
+
+
+def multi_step_simulation_with_checkpointing(system: System, state: State, mngr: ocp.CheckpointManager, nr_iterations: int, nr_snapshots: int, nr_checkpoints: int, resume_from_last_checkpoint: bool = True):
+    num_iter_completed = 0
+
+    if resume_from_last_checkpoint and mngr.latest_step() is not None:
+        num_iter_completed = mngr.latest_step()
+        state = restore_state(mngr, state)
+    else:
+        mngr.save(0, args=ocp.args.StandardSave(state)) # creating checkpoint for initial state
+
+    validate_sim_params(nr_iterations, nr_snapshots, nr_checkpoints)
+
+    snapshot_interval = nr_iterations // nr_snapshots
+    snapshot_iterations = range(num_iter_completed + snapshot_interval,
+                                num_iter_completed + nr_iterations + 1, snapshot_interval)    
+
+    results = [{
+        "u": state["u"],
+        "phase_field": state["phase_field"]
+    }]
+
+    for iteration_index in snapshot_iterations:
+        state = multi_step_simulation_block(system, state, snapshot_interval)
+
+        results.append({
+            "u": state["u"],
+            "phase_field": state["phase_field"]
+        })
+
+        mngr.save(iteration_index, args=ocp.args.StandardSave(state))
+
+    results = jax.device_get(results)
+    return tree_util.tree_map(
+        lambda *rs: np.stack([np.array(r) for r in rs]),
+        *results), state

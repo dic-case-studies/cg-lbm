@@ -17,8 +17,8 @@ class State(Base):
         u: (LX, LY, x,) Velocity vector
         obs: (LX, LY,) Obstacle
         obs_velocity: (LX, LY, x) Velocity vector of obstacle
-        f: (LX, LY, k) Phase profile
-        N: (LX, LY, k)
+        f: (k, LX, LY) Phase profile
+        N: (k, LX, LY)
     """
     rho: jax.Array
     pressure: jax.Array
