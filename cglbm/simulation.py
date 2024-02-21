@@ -1,10 +1,12 @@
 from jax import jit, lax, tree_util
 import numpy as np  # We need numpy here where we transfer data from the GPU
 import orbax.checkpoint as ocp
+from typing import Any, Tuple
 
 from cglbm.environment import System, State
 from cglbm.lbm import *
 from cglbm.utils import restore_state, validate_sim_params
+
 
 @jit
 def simulation_step(system: System, state: State, idx: int) -> State:
@@ -134,7 +136,7 @@ def multi_step_simulation_block(system: System, state: State, nr_iter):
 
 # Note: There needs to be a separate function for calling
 # multi_step_simulation_block so that we can shard and perform pmap later
-def multi_step_simulation(system: System, state: State, nr_iterations: int, nr_snapshots: int = 10):
+def multi_step_simulation(system: System, state: State, nr_iterations: int, nr_snapshots: int = 10) -> Tuple[Any, State]:
     # TODO: nr_iterations has to be divisible by nr_snapshots
     save_interval = nr_iterations // nr_snapshots
 
@@ -152,25 +154,24 @@ def multi_step_simulation(system: System, state: State, nr_iterations: int, nr_s
 
     # Receive the buffer from the Accelerator
     results = jax.device_get(results)
-    return tree_util.tree_map(
-        lambda *rs: np.stack([np.array(r) for r in rs]),
-        *results)
+    return (tree_util.tree_map(lambda *rs: np.stack([np.array(r) for r in rs]), *results), state)
 
 
-def multi_step_simulation_with_checkpointing(system: System, state: State, mngr: ocp.CheckpointManager, nr_iterations: int, nr_snapshots: int, nr_checkpoints: int, resume_from_last_checkpoint: bool = True):
+def multi_step_simulation_with_checkpointing(system: System, state: State, mngr: ocp.CheckpointManager, nr_iterations: int, nr_snapshots: int, nr_checkpoints: int, resume_from_last_checkpoint: bool = True) -> Tuple[Any, State]:
     num_iter_completed = 0
 
     if resume_from_last_checkpoint and mngr.latest_step() is not None:
         num_iter_completed = mngr.latest_step()
         state = restore_state(mngr, state)
     else:
-        mngr.save(0, args=ocp.args.StandardSave(state)) # creating checkpoint for initial state
+        # creating checkpoint for initial state
+        mngr.save(0, args=ocp.args.StandardSave(state))
 
     validate_sim_params(nr_iterations, nr_snapshots, nr_checkpoints)
 
     snapshot_interval = nr_iterations // nr_snapshots
     snapshot_iterations = range(num_iter_completed + snapshot_interval,
-                                num_iter_completed + nr_iterations + 1, snapshot_interval)    
+                                num_iter_completed + nr_iterations + 1, snapshot_interval)
 
     results = [{
         "u": state["u"],
@@ -188,6 +189,5 @@ def multi_step_simulation_with_checkpointing(system: System, state: State, mngr:
         mngr.save(iteration_index, args=ocp.args.StandardSave(state))
 
     results = jax.device_get(results)
-    return tree_util.tree_map(
-        lambda *rs: np.stack([np.array(r) for r in rs]),
-        *results), state
+
+    return (tree_util.tree_map(lambda *rs: np.stack([np.array(r) for r in rs]), *results), state)
