@@ -19,12 +19,13 @@ setup(
     include_package_data=True,
     install_requires=[
         "chex",
+        "etils",
+        "importlib_resources",
         # Installation of jax should not be done from here
         "jax",
         "jaxlib",
         "numpy",
-        "etils",
-        "importlib_resources"
+        "orbax-checkpoint"
     ],
     extras_require={
         "develop": [
