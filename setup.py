@@ -1,5 +1,5 @@
 """
-pip install cglbm -e . # For installing locally
+pip install -e . # For installing locally
 pip install "cglbm[develop]" -e . # For development purposes
 """
 
@@ -20,7 +20,6 @@ setup(
     install_requires=[
         "chex",
         "etils",
-        "importlib_resources",
         # Installation of jax should not be done from here
         "jax",
         "jaxlib",
