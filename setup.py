@@ -31,6 +31,7 @@ setup(
             "absl-py",
             "einops",
             "h5py",
+            "ipykernel",
             "meshio",
             "pandas",
             "pyarrow",
