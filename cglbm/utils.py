@@ -5,24 +5,21 @@ from typing import Any, Tuple
 from cglbm.environment import State, System
 
 
-def validate_sim_params(nr_iterations: int, nr_snapshots: int, nr_checkpoints: int):
+def validate_sim_params(nr_iterations: int, nr_snapshots: int, checkpoint_interval: int = None):
     """
     Args:
         nr_iterations: () Number of iterations
         nr_snapshots: () Number of snapshots
-        nr_checkpoints: () Number of checkpoints
+        checkpoint_interval: () (default: None) Timesteps between consecutive checkpoints
     Returns:
         None
     """
     assert nr_iterations % nr_snapshots == 0, "Number of iterations should be divisible by number of snapshots"
-    snapshot_interval = nr_iterations // nr_snapshots
 
-    assert nr_iterations % nr_checkpoints == 0, "Number of checkpoints should be divisible by number of snapshots"
-    checkpoint_interval = nr_iterations // nr_checkpoints
-
-    assert nr_checkpoints <= nr_snapshots, "Number of checkpoints must be less than or equal to snapshots"
-
-    assert checkpoint_interval % snapshot_interval == 0, "If checkpoint interval is not multiple of snapshot interval, the program might not generate all the checkpoints"
+    if checkpoint_interval is not None:
+        snapshot_interval = nr_iterations // nr_snapshots
+        assert checkpoint_interval >= snapshot_interval, "Checkpoint interval must be greater than snapshot interval (nr_iterations // nr_snapshots)"
+        assert checkpoint_interval % snapshot_interval == 0, "If checkpoint interval is not multiple of snapshot interval (nr_iterations // nr_snapshots), the program might not generate all the checkpoints"
 
 
 def save_checkpoint(step: int, mngr: ocp.CheckpointManager, system: System, state: State):

@@ -137,8 +137,9 @@ def multi_step_simulation_block(system: System, state: State, nr_iter):
 # Note: There needs to be a separate function for calling
 # multi_step_simulation_block so that we can shard and perform pmap later
 def multi_step_simulation(system: System, state: State, nr_iterations: int, nr_snapshots: int = 10) -> Tuple[Any, State]:
-    # TODO: nr_iterations has to be divisible by nr_snapshots
-    save_interval = nr_iterations // nr_snapshots
+    validate_sim_params(nr_iterations, nr_snapshots)
+                        
+    snapshot_interval = nr_iterations // nr_snapshots
 
     results = [{
         "u": state["u"],
@@ -146,7 +147,7 @@ def multi_step_simulation(system: System, state: State, nr_iterations: int, nr_s
     }]
 
     for _ in range(nr_snapshots):
-        state = multi_step_simulation_block(system, state, save_interval)
+        state = multi_step_simulation_block(system, state, snapshot_interval)
         results.append({
             "u": state["u"],
             "phase_field": state["phase_field"]
@@ -157,7 +158,7 @@ def multi_step_simulation(system: System, state: State, nr_iterations: int, nr_s
     return (tree_util.tree_map(lambda *rs: np.stack([np.array(r) for r in rs]), *results), state)
 
 
-def multi_step_simulation_with_checkpointing(system: System, state: State, mngr: ocp.CheckpointManager, nr_iterations: int, nr_snapshots: int, nr_checkpoints: int, resume_from_last_checkpoint: bool = True) -> Tuple[Any, State]:
+def multi_step_simulation_with_checkpointing(system: System, state: State, mngr: ocp.CheckpointManager, nr_iterations: int, nr_snapshots: int, checkpoint_interval: int, resume_from_last_checkpoint: bool = True) -> Tuple[Any, State]:
     num_iter_completed = 0
 
     if resume_from_last_checkpoint and mngr.latest_step() is not None:
@@ -167,7 +168,7 @@ def multi_step_simulation_with_checkpointing(system: System, state: State, mngr:
         # creating checkpoint for initial state
         save_checkpoint(0, mngr, system, state)
 
-    validate_sim_params(nr_iterations, nr_snapshots, nr_checkpoints)
+    validate_sim_params(nr_iterations, nr_snapshots, checkpoint_interval)
 
     snapshot_interval = nr_iterations // nr_snapshots
     snapshot_iterations = range(num_iter_completed + snapshot_interval,
@@ -186,7 +187,8 @@ def multi_step_simulation_with_checkpointing(system: System, state: State, mngr:
             "phase_field": state["phase_field"]
         })
 
-        save_checkpoint(iteration_index, mngr, system, state)
+        if (iteration_index - num_iter_completed) % checkpoint_interval == 0:
+            save_checkpoint(iteration_index, mngr, system, state)
 
     results = jax.device_get(results)
 
