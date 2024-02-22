@@ -5,7 +5,7 @@ from typing import Any, Tuple
 
 from cglbm.environment import System, State
 from cglbm.lbm import *
-from cglbm.utils import restore_state, validate_sim_params
+from cglbm.utils import *
 
 
 @jit
@@ -162,10 +162,10 @@ def multi_step_simulation_with_checkpointing(system: System, state: State, mngr:
 
     if resume_from_last_checkpoint and mngr.latest_step() is not None:
         num_iter_completed = mngr.latest_step()
-        state = restore_state(mngr, state)
+        system, state = restore_checkpoint(mngr, system, state)
     else:
         # creating checkpoint for initial state
-        mngr.save(0, args=ocp.args.StandardSave(state))
+        save_checkpoint(0, mngr, system, state)
 
     validate_sim_params(nr_iterations, nr_snapshots, nr_checkpoints)
 
@@ -186,7 +186,7 @@ def multi_step_simulation_with_checkpointing(system: System, state: State, mngr:
             "phase_field": state["phase_field"]
         })
 
-        mngr.save(iteration_index, args=ocp.args.StandardSave(state))
+        save_checkpoint(iteration_index, mngr, system, state)
 
     results = jax.device_get(results)
 
