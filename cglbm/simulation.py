@@ -1,8 +1,11 @@
 from jax import jit, lax, tree_util
 import numpy as np  # We need numpy here where we transfer data from the GPU
+import orbax.checkpoint as ocp
+from typing import Any, Tuple
 
 from cglbm.environment import System, State
 from cglbm.lbm import *
+from cglbm.utils import *
 
 
 @jit
@@ -133,9 +136,10 @@ def multi_step_simulation_block(system: System, state: State, nr_iter):
 
 # Note: There needs to be a separate function for calling
 # multi_step_simulation_block so that we can shard and perform pmap later
-def multi_step_simulation(system: System, state: State, nr_iterations: int, nr_snapshots: int = 10):
-    # TODO: nr_iterations has to be divisible by nr_snapshots
-    save_interval = nr_iterations // nr_snapshots
+def multi_step_simulation(system: System, state: State, nr_iterations: int, nr_snapshots: int = 10) -> Tuple[Any, State]:
+    validate_sim_params(nr_iterations, nr_snapshots)
+                        
+    snapshot_interval = nr_iterations // nr_snapshots
 
     results = [{
         "u": state["u"],
@@ -143,7 +147,7 @@ def multi_step_simulation(system: System, state: State, nr_iterations: int, nr_s
     }]
 
     for _ in range(nr_snapshots):
-        state = multi_step_simulation_block(system, state, save_interval)
+        state = multi_step_simulation_block(system, state, snapshot_interval)
         results.append({
             "u": state["u"],
             "phase_field": state["phase_field"]
@@ -151,6 +155,41 @@ def multi_step_simulation(system: System, state: State, nr_iterations: int, nr_s
 
     # Receive the buffer from the Accelerator
     results = jax.device_get(results)
-    return tree_util.tree_map(
-        lambda *rs: np.stack([np.array(r) for r in rs]),
-        *results)
+    return (tree_util.tree_map(lambda *rs: np.stack([np.array(r) for r in rs]), *results), state)
+
+
+def multi_step_simulation_with_checkpointing(system: System, state: State, mngr: ocp.CheckpointManager, nr_iterations: int, nr_snapshots: int, checkpoint_interval: int, resume_from_last_checkpoint: bool = True) -> Tuple[Any, State]:
+    num_iter_completed = 0
+
+    if resume_from_last_checkpoint and mngr.latest_step() is not None:
+        num_iter_completed = mngr.latest_step()
+        system, state = restore_checkpoint(mngr, system, state)
+    else:
+        # creating checkpoint for initial state
+        save_checkpoint(0, mngr, system, state)
+
+    validate_sim_params(nr_iterations, nr_snapshots, checkpoint_interval)
+
+    snapshot_interval = nr_iterations // nr_snapshots
+    snapshot_iterations = range(num_iter_completed + snapshot_interval,
+                                num_iter_completed + nr_iterations + 1, snapshot_interval)
+
+    results = [{
+        "u": state["u"],
+        "phase_field": state["phase_field"]
+    }]
+
+    for iteration_index in snapshot_iterations:
+        state = multi_step_simulation_block(system, state, snapshot_interval)
+
+        results.append({
+            "u": state["u"],
+            "phase_field": state["phase_field"]
+        })
+
+        if (iteration_index - num_iter_completed) % checkpoint_interval == 0:
+            save_checkpoint(iteration_index, mngr, system, state)
+
+    results = jax.device_get(results)
+
+    return (tree_util.tree_map(lambda *rs: np.stack([np.array(r) for r in rs]), *results), state)

@@ -1,5 +1,5 @@
 """
-pip install cglbm -e . # For installing locally
+pip install -e . # For installing locally
 pip install "cglbm[develop]" -e . # For development purposes
 """
 
@@ -19,18 +19,19 @@ setup(
     include_package_data=True,
     install_requires=[
         "chex",
+        "etils",
         # Installation of jax should not be done from here
         "jax",
         "jaxlib",
         "numpy",
-        "etils",
-        "importlib_resources"
+        "orbax-checkpoint"
     ],
     extras_require={
         "develop": [
             "absl-py",
             "einops",
             "h5py",
+            "ipykernel",
             "meshio",
             "pandas",
             "pyarrow",
