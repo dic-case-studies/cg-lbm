@@ -27,10 +27,17 @@ class State(Base):
     # TODO: Obs and obs_velocity can be part of a separate class
     obs: jax.Array
     obs_velocity: jax.Array
+    obs_indices: jax.Array
 
     f: jax.Array
     N: jax.Array
 
+# TODO: This class has to change to accomodate ghost nodes when distributing across devices
+# @dataclass
+# class Boundary():
+#     obs_mask: jax.Array
+#     obs_velocity: jax.Array
+#     obs_indices: jax.Array
 
 @dataclass
 class System(Base):

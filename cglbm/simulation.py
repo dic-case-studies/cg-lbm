@@ -22,6 +22,8 @@ def simulation_step(system: System, state: State, idx: int) -> State:
     dst_phase_field = compute_dst_phase_field(
         system.cXs, system.cYs, phase_field=phase_field)
 
+    # TODO: Add wetting boundary condition
+
     phi_grad = compute_phi_grad(system.cXYs, system.weights, dst_phase_field)
 
     curvature_force = compute_surface_tension_force(
