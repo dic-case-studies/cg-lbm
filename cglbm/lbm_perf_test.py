@@ -68,15 +68,15 @@ class LBMPerfTest(absltest.TestCase):
             LX = system.LX
             LY = system.LY
             rng1, rng2 = jax.random.split(rng, 2)
-            phi = jax.random.normal(rng1, (LY, LX))
+            pressure = jax.random.normal(rng1, (LY, LX))
             u = jax.random.normal(rng2, (LY, LX, 2))
             return {
-                "phi": phi,
+                "pressure": pressure,
                 "u": u
             }
 
         def step_fn(state):
-            return grid_eq_dist(system.cXYs, system.weights, system.phi_weights, state["phi"], state["u"])
+            return grid_eq_dist(system.cXYs, system.weights, system.phi_weights, state["pressure"], state["u"])
 
         test_utils.benchmark("benchmark grid eq dist", init_fn, step_fn)
 
