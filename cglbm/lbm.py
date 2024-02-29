@@ -54,6 +54,27 @@ grid_eq_dist = jit(vmap(_eq_dist, in_axes=(None, None, None, 0, 0), out_axes=1))
 
 
 @jit
+def wetting_boundary_condition_solid(
+    width: jnp.float32,
+    contact_angle: jnp.float32,
+    obs_indices: jax.Array,
+    surface_normals: jax.Array,
+    phase_field: jax.Array
+):
+    epsilon = - 2 * jnp.cos(contact_angle) / width
+    epsilon_inv = 1 / epsilon
+
+    normal_indices = (jnp.array(obs_indices).T + surface_normals[obs_indices]).astype(dtype=jnp.int32)
+    phase_fluid = phase_field[tuple(normal_indices.T)]
+
+    phase_fluid = jnp.abs(epsilon_inv * ((1 + epsilon) - jnp.sqrt((1 + epsilon) ** 2 - 4 * epsilon * phase_fluid)) - phase_fluid)
+
+    phi = phase_field.at[obs_indices].set(phase_fluid)
+
+    return phi
+
+
+@jit
 def compute_phase_field(f: jax.Array):
     """
     Args:

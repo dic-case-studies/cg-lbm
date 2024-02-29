@@ -29,7 +29,38 @@ class LBMPerfTest(absltest.TestCase):
 
         test_utils.benchmark("benchmark eq dist phase field", init_fn, step_fn)
 
-    
+
+    def test_perf_wetting_boundary_condition_solid(self):
+        system = test_utils.load_test_config("params.ini")
+        width = 4.0
+        contact_angle = jnp.pi / 4
+
+        def init_fn(rng):
+            LX = system.LX
+            LY = system.LY
+            rng = jax.random.split(rng, 3)
+            phase_field = jax.random.uniform(rng[0], (LY, LX))
+            surface_normals = jax.random.uniform(rng[1], (LY, LX, 2))
+            obs_indices = tuple(jax.random.randint(rng[2], (20, 2), 0, min(LX, LY)).T)
+
+            return {
+                "phase_field": phase_field,
+                "surface_normals": surface_normals,
+                "obs_indices": obs_indices
+            }
+
+        def step_fn(state):
+            return wetting_boundary_condition_solid(
+                width,
+                contact_angle,
+                state["obs_indices"],
+                state["surface_normals"],
+                state["phase_field"]
+            )
+
+        test_utils.benchmark("benchmark wetting boundary condition", init_fn, step_fn)
+
+
     def test_perf_grid_eq_dist(self):
         system = test_utils.load_test_config("params.ini")
 
