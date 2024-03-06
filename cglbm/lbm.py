@@ -2,7 +2,7 @@ from functools import partial
 import jax
 from jax import vmap, jit, lax
 from jax import numpy as jnp
-
+from typing import Tuple
 
 @jit
 @partial(vmap, in_axes=(None, None, 0, 0), out_axes=1)
@@ -53,6 +53,59 @@ _eq_dist = vmap(eq_dist, in_axes=(None, None, None, 0, 0), out_axes=1)
 grid_eq_dist = jit(vmap(_eq_dist, in_axes=(None, None, None, 0, 0), out_axes=1))
 
 
+#TODO: Add perf test
+@jit
+def compute_dst_obs(cXs: jax.Array, cYs: jax.Array, obs: jax.Array):
+    """
+    Args:
+        cXs: (k,)
+        cYs: (k,)
+        obs: (i,j,)
+
+    Returns:
+        dst_obs: (k,i,j,)
+    """
+    dst_obs = []
+    for i, cx, cy in zip(jnp.arange(9), cXs, cYs):
+        dst_obs.append(
+            jnp.roll(obs, (cx, cy), axis=(0, 1)))
+
+    return jnp.stack(dst_obs)
+
+#TODO: Add perf test
+@jit
+def compute_surface_normals(
+    cXYs: jax.Array,
+    weights: jax.Array,
+    dst_obs: jax.Array,
+    obs_indices: Tuple[jax.Array, jax.Array]):
+    """
+    Args:
+        cXYs: (k,v,)
+        weights: (k,)
+        dst_obs: (k,i,j,)
+        obs_indices: [(n,),(n,)]
+
+    Returns:
+        surface_normal: (n,2)
+    """
+    # TODO: Add "cs" (speed of sound in lattice units) in the System itself
+    # TODO: the "cs_2" variable also needs to be part of compute_phi_grad where we hardcode it to 3
+    cs = 1.0 / jnp.sqrt(3)
+    cs_2 = 1.0 / (cs * cs)
+
+    grad_solid = cs_2 * jnp.einsum("k,kij,kv->ijv", weights, dst_obs, cXYs)[obs_indices]
+
+    mag_grad_solid = jnp.sqrt(jnp.sum(jnp.square(grad_solid), axis=1))
+
+    surface_normal = -1 * grad_solid / mag_grad_solid[:,jnp.newaxis]
+
+    return surface_normal
+
+    # fixed surface normals
+    # return jnp.full((len(obs_indices[0]), 2), fill_value=jnp.array([-1, 0]))
+
+
 @jit
 def wetting_boundary_condition_solid(
     width: jnp.float32,
@@ -61,13 +114,25 @@ def wetting_boundary_condition_solid(
     surface_normals: jax.Array,
     phase_field: jax.Array
 ):
+    """
+    Args:
+        width: ()
+        contact_angle: ()
+        obs_indices: [(n,),(n,)]
+        surface_normals: (n,2,)
+        phase_field: (i,j,)
+        
+    Returns:
+        phase_field: (i,j,)
+    """
     epsilon = - 2 * jnp.cos(contact_angle) / width
     epsilon_inv = 1 / epsilon
 
-    normal_indices = (jnp.array(obs_indices).T + surface_normals[obs_indices]).astype(dtype=jnp.int32)
+    normal_indices = (jnp.array(obs_indices).T + surface_normals).astype(dtype=jnp.int32)
     phase_fluid = phase_field[tuple(normal_indices.T)]
 
-    phase_fluid = jnp.abs(epsilon_inv * ((1 + epsilon) - jnp.sqrt((1 + epsilon) ** 2 - 4 * epsilon * phase_fluid)) - phase_fluid)
+    phase_fluid = jnp.abs(epsilon_inv * ((1 + epsilon) - jnp.sqrt((1 + epsilon)
+                          ** 2 - 4 * epsilon * phase_fluid)) - phase_fluid)
 
     phi = phase_field.at[obs_indices].set(phase_fluid)
 
@@ -331,8 +396,8 @@ def compute_density_velocity_pressure(
     pressure_new = pressure_old
 
     for _ in range(10):
-        u_new = sumNV + ((total_force - \
-            pressure_new * (density_one - density_two) * phi_grad) * 0.5) / rho_new
+        u_new = sumNV + ((total_force -
+                          pressure_new * (density_one - density_two) * phi_grad) * 0.5) / rho_new
         usq_new = jnp.sum(jnp.square(u_new))
         pressure_new = (sumN / 3.0 - weights[0] * usq_new * 0.5 -
                         (1 - phi_weights[0]) / 3.0) / (1 - weights[0])
@@ -447,7 +512,7 @@ def compute_propagation(
     cYs: jax.Array,
     cXYs: jax.Array,
     weights: jax.Array,
-    obs: jax.Array,
+    dst_obs: jax.Array,
     obsVel: jax.Array,
     N_new: jax.Array,
     f_new: jax.Array
@@ -458,7 +523,7 @@ def compute_propagation(
         cYs: (k,)
         cXYs: (k,v,)
         weights: (k,)
-        obs: (i,j,)
+        dst_obs: (k,i,j)
         obsVel: (i,j,v,)
         N_new: (k,i,j,)
         f_new: (k,i,j,)
@@ -469,19 +534,17 @@ def compute_propagation(
     """
     # TODO: use state.N and state.f for boundary cases
     N_dst = []
+    # TODO: f can be removed from propogation since phase_field calculation does not care about direction
     f_dst = []
-    # TODO: dst_obs and dst_obs_vel can be calculated only once before start of iteration 0
-    dst_obs = []
     dst_obs_vel = []
+    
     for i, cx, cy in zip(jnp.arange(9), cXs, cYs):
         N_dst.append(jnp.roll(N_new[i], (cx, cy), axis=(0, 1)))
         f_dst.append(jnp.roll(f_new[i], (cx, cy), axis=(0, 1)))
-        dst_obs.append(jnp.roll(obs, (cx, cy), axis=(0, 1)))
         dst_obs_vel.append(jnp.roll(obsVel, (cx, cy), axis=(0, 1)))
 
     N_dst = jnp.stack(N_dst)
     f_dst = jnp.stack(f_dst)
-    dst_obs = jnp.stack(dst_obs)
     dst_obs_vel = jnp.stack(dst_obs_vel)
 
     N_invert = N_new[jnp.array([0, 3, 4, 1, 2, 7, 8, 5, 6])] + 6.0 * \

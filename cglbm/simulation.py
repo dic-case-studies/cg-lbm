@@ -22,7 +22,19 @@ def simulation_step(system: System, state: State, idx: int) -> State:
     dst_phase_field = compute_dst_phase_field(
         system.cXs, system.cYs, phase_field=phase_field)
 
-    # TODO: Add wetting boundary condition
+    dst_obs = compute_dst_obs(
+        system.cXs, system.cYs, state.obs)
+
+    surface_normals = compute_surface_normals(
+        system.cXYs, system.weights, dst_obs, state.obs_indices)
+
+    phase_field = wetting_boundary_condition_solid(
+        system.width,
+        jnp.pi / 4, # TODO: add contact_angle to system
+        state.obs_indices,
+        surface_normals,
+        phase_field,
+    )
 
     phi_grad = compute_phi_grad(system.cXYs, system.weights, dst_phase_field)
 
@@ -115,7 +127,7 @@ def simulation_step(system: System, state: State, idx: int) -> State:
         system.cYs,
         system.cXYs,
         system.weights,
-        state.obs,
+        dst_obs,
         state.obs_velocity,
         N_new,
         f_new
@@ -140,7 +152,7 @@ def multi_step_simulation_block(system: System, state: State, nr_iter):
 # multi_step_simulation_block so that we can shard and perform pmap later
 def multi_step_simulation(system: System, state: State, nr_iterations: int, nr_snapshots: int = 10) -> Tuple[Any, State]:
     validate_sim_params(nr_iterations, nr_snapshots)
-                        
+
     snapshot_interval = nr_iterations // nr_snapshots
 
     results = [{

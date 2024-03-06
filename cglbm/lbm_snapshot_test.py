@@ -55,7 +55,7 @@ class LBMSnapshotTest(absltest.TestCase):
 
 
     def test_compute_dst_phase_field(self):
-        # NOTE: currently failing
+        # NOTE: comparing output while ignoring the elements at all four boundaries
         system = test_utils.load_test_config("params.ini")
         GRID_SHAPE = (system.LY, system.LX)
         GRID_3D_SHAPE = (system.LY, system.LX, system.NL)
@@ -72,7 +72,7 @@ class LBMSnapshotTest(absltest.TestCase):
         actual_d = compute_dst_phase_field(system.cXs, system.cYs, phase_field)
         actual = jax.device_get(actual_d)
 
-        # self.assertTrue(np.allclose(actual, expected))
+        self.assertTrue(np.allclose(actual[:,1:-1,1:-1], expected[:,1:-1,1:-1]))
 
 
     def test_compute_phi_grad(self):
@@ -429,12 +429,15 @@ class LBMSnapshotTest(absltest.TestCase):
         expected_N = output_helper.get("N", GRID_3D_SHAPE, "i j k -> k i j")
         expected_f = output_helper.get("f", GRID_3D_SHAPE, "i j k -> k i j")
 
+        # TODO: lose dependency on compute_dst_obs method
+        dst_obs = compute_dst_obs(system.cXs, system.cYs, obs)
+        
         actual_d = compute_propagation(
             system.cXs,
             system.cYs,
             system.cXYs,
             system.weights,
-            obs,
+            dst_obs,
             obs_vel,
             N_new,
             f_new)

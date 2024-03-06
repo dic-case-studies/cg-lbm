@@ -40,8 +40,8 @@ class LBMPerfTest(absltest.TestCase):
             LY = system.LY
             rng = jax.random.split(rng, 3)
             phase_field = jax.random.uniform(rng[0], (LY, LX))
-            surface_normals = jax.random.uniform(rng[1], (LY, LX, 2))
-            obs_indices = tuple(jax.random.randint(rng[2], (20, 2), 0, min(LX, LY)).T)
+            obs_indices = tuple(jax.random.randint(rng[1], (60, 2), 0, min(LX, LY)).T)
+            surface_normals = jax.random.uniform(rng[2], (60, 2))
 
             return {
                 "phase_field": phase_field,

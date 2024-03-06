@@ -1,7 +1,7 @@
 
 import jax
 import configparser
-# from typing import Any, Dict, List, Optional, Sequence, Tuple, Type, Union
+from typing import Tuple
 
 from chex import dataclass
 
@@ -15,10 +15,12 @@ class State(Base):
         rho: (LX, LY,) Density
         pressure: (LX, LY,) Pressure
         u: (LX, LY, x,) Velocity vector
+        phase_field: (LX, LY,) Phase field
         obs: (LX, LY,) Obstacle
         obs_velocity: (LX, LY, x) Velocity vector of obstacle
+        obs_indices: Tuple(x_cords, ycords) Tuple of X and Y coordinates of the obstacles
         f: (k, LX, LY) Phase profile
-        N: (k, LX, LY)
+        N: (k, LX, LY) 
     """
     rho: jax.Array
     pressure: jax.Array
@@ -27,7 +29,7 @@ class State(Base):
     # TODO: Obs and obs_velocity can be part of a separate class
     obs: jax.Array
     obs_velocity: jax.Array
-    obs_indices: jax.Array
+    obs_indices: Tuple[jax.Array, jax.Array]
 
     f: jax.Array
     N: jax.Array
