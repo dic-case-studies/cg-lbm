@@ -30,10 +30,10 @@ def simulation_step(system: System, state: State, idx: int) -> State:
 
     phase_field = wetting_boundary_condition_solid(
         system.width,
-        jnp.pi / 4, # TODO: add contact_angle to system
+        3 * jnp.pi / 4, # TODO: add contact_angle to system
         state.obs_indices,
         surface_normals,
-        phase_field,
+        phase_field
     )
 
     phi_grad = compute_phi_grad(system.cXYs, system.weights, dst_phase_field)

@@ -92,7 +92,7 @@ def compute_surface_normals(
     # TODO: Add "cs" (speed of sound in lattice units) in the System itself
     # TODO: the "cs_2" variable also needs to be part of compute_phi_grad where we hardcode it to 3
     cs = 1.0 / jnp.sqrt(3)
-    cs_2 = 1.0 / (cs * cs)
+    cs_2 = 3
 
     grad_solid = cs_2 * jnp.einsum("k,kij,kv->ijv", weights, dst_obs, cXYs)[obs_indices]
 
