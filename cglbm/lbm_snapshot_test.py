@@ -48,7 +48,10 @@ class LBMSnapshotTest(absltest.TestCase):
         output_helper = ParquetIOHelper(expected_path).read()
         expected = output_helper.get("phase_field", GRID_SHAPE)
 
-        actual_d = compute_phase_field(f)
+        phase_field_old = jnp.full(GRID_SHAPE, -1)
+        obs_mask = jnp.zeros(GRID_SHAPE, dtype=bool)
+
+        actual_d = compute_phase_field(phase_field_old, f, obs_mask)
         actual = jax.device_get(actual_d)
 
         self.assertTrue(np.allclose(actual, expected))

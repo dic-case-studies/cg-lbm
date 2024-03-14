@@ -105,14 +105,18 @@ class LBMPerfTest(absltest.TestCase):
         def init_fn(rng):
             LX = system.LX
             LY = system.LY
-            rng1, _ = jax.random.split(rng, 2)
-            f = jax.random.normal(rng1, (9, LY, LX))
+            rngs = jax.random.split(rng, 2)
+            phase_field = jax.random.uniform(rngs[0],(LY, LX))
+            f = jax.random.normal(rngs[1], (9, LY, LX))
+            obs_mask = jnp.zeros((LY, LX), dtype=bool)
             return {
-                "f": f
+                "phase_field": phase_field,
+                "f": f,
+                "obs_mask": obs_mask
             }
 
         def step_fn(state):
-            return compute_phase_field(state["f"])
+            return compute_phase_field(state["phase_field"], state["f"], state["obs_mask"])
 
         test_utils.benchmark("benchmark compute phase field", init_fn, step_fn)
 

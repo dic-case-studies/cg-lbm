@@ -18,9 +18,7 @@ def simulation_step(system: System, state: State, idx: int) -> State:
     Returns:
         next_state: State
     """
-    phase_field = compute_phase_field(state.f)
-    dst_phase_field = compute_dst_phase_field(
-        system.cXs, system.cYs, phase_field=phase_field)
+    phase_field = compute_phase_field(state.phase_field, state.f, state.obs)
 
     dst_obs = compute_dst_obs(
         system.cXs, system.cYs, state.obs)
@@ -30,11 +28,14 @@ def simulation_step(system: System, state: State, idx: int) -> State:
 
     phase_field = wetting_boundary_condition_solid(
         system.width,
-        3 * jnp.pi / 4, # TODO: add contact_angle to system
+        jnp.pi / 6, # TODO: add contact_angle to system
         state.obs_indices,
         surface_normals,
         phase_field
     )
+    
+    dst_phase_field = compute_dst_phase_field(
+        system.cXs, system.cYs, phase_field=phase_field)
 
     phi_grad = compute_phi_grad(system.cXYs, system.weights, dst_phase_field)
 

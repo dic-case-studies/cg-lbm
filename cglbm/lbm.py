@@ -98,7 +98,7 @@ def compute_surface_normals(
 
     mag_grad_solid = jnp.sqrt(jnp.sum(jnp.square(grad_solid), axis=1))
 
-    surface_normal = -1 * grad_solid / mag_grad_solid[:,jnp.newaxis]
+    surface_normal = grad_solid / mag_grad_solid[:,jnp.newaxis]
 
     return surface_normal
 
@@ -134,21 +134,27 @@ def wetting_boundary_condition_solid(
     phase_fluid = jnp.abs(epsilon_inv * ((1 + epsilon) - jnp.sqrt((1 + epsilon)
                           ** 2 - 4 * epsilon * phase_fluid)) - phase_fluid)
 
-    phi = phase_field.at[obs_indices].set(phase_fluid)
+    phase_field = phase_field.at[obs_indices].set(phase_fluid)
 
-    return phi
+    return phase_field
 
 
 @jit
-def compute_phase_field(f: jax.Array):
+def compute_phase_field(phase_field_old: jax.Array, f: jax.Array, obs_mask: jax.Array):
     """
     Args:
+        phase_field_old: (i,j)
         f: (k,i,j,)
-
+        obs_mask: (i,j)
     Returns:
         phase_field: (i,j,)
     """
-    return jnp.einsum("kij->ij", f)
+    phase_field_new = jnp.einsum("kij->ij", f)
+
+    phase_field = jnp.where(obs_mask, phase_field_old, phase_field_new)
+
+    return phase_field
+    
 
 
 @jit
