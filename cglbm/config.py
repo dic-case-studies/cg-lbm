@@ -1,6 +1,7 @@
 import configparser
 from cglbm.environment import System
 from etils import epath
+import jax.numpy as jnp
 
 # TODO: This should throw an error if file not found
 
@@ -31,6 +32,7 @@ class SimulationParams:
         self.ref_pressure = float(pt.get("ref_pressure", 0.0))
         self.uWallX = float(pt.get("uWallX", 0.0))
         self.drop_radius = float(pt.get("drop_radius", 0.0))
+        self.contact_angle = float(pt.get("contact_angle", 45)) * jnp.pi / 180
         self.Width = 4.0
 
     def print_config(self):
@@ -45,6 +47,7 @@ class SimulationParams:
         print(f"reference pressure = {self.ref_pressure}")
         print(f"wall velocity = {self.uWallX}")
         print(f"drop radius = {self.drop_radius}")
+        print(f"contact angle = {self.contact_angle}")
         print(f"Width = {self.width}")
 
 
@@ -70,6 +73,7 @@ def load_config(config_file: str) -> System:
         # TODO: This has to be part of obstacle not be a part of config
         uWallX=config.uWallX,
         drop_radius=config.drop_radius,
+        contact_angle=config.contact_angle,
         alpha=alpha,
         cXs=cXs,
         cYs=cYs,

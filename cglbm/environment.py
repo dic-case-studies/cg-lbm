@@ -91,6 +91,7 @@ class System(Base):
     uWallX: float
     drop_radius: float
     alpha: float
+    contact_angle: float
 
     # N-D Constants
     # [k]

@@ -28,7 +28,7 @@ def simulation_step(system: System, state: State, idx: int) -> State:
 
     phase_field = wetting_boundary_condition_solid(
         system.width,
-        jnp.pi / 6, # TODO: add contact_angle to system
+        system.contact_angle,
         state.obs_indices,
         surface_normals,
         phase_field
