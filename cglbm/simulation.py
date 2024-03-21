@@ -23,16 +23,20 @@ def simulation_step(system: System, state: State, idx: int) -> State:
     dst_obs = compute_dst_obs(
         system.cXs, system.cYs, state.obs)
 
-    surface_normals = compute_surface_normals(
-        system.cXYs, system.weights, dst_obs, state.obs_indices)
+    # feature toggle: 
+    # enable_wetting_boundary is a static variable. 
+    # following if block will be removed from jaxpr if enable_wetting_boundary is false
+    if system.enable_wetting_boundary:
+        surface_normals = compute_surface_normals(
+            system.cXYs, system.weights, dst_obs, state.obs_indices)
 
-    phase_field = wetting_boundary_condition_solid(
-        system.width,
-        system.contact_angle,
-        state.obs_indices,
-        surface_normals,
-        phase_field
-    )
+        phase_field = wetting_boundary_condition_solid(
+            system.width,
+            system.contact_angle,
+            state.obs_indices,
+            surface_normals,
+            phase_field
+        )
     
     dst_phase_field = compute_dst_phase_field(
         system.cXs, system.cYs, phase_field=phase_field)

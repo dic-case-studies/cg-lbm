@@ -92,6 +92,10 @@ class System:
     alpha: float
     contact_angle: float
 
+    # feature toggle
+    # TODO: Put this in a seperate dataclass
+    enable_wetting_boundary: bool
+
     # N-D Constants
     # [k]
     # TODO: these can be seperated into a "lattice" variable
@@ -107,7 +111,7 @@ class System:
 
     def __hash__(self):
         # TODO: can not hash jax arrays, so only hashing float variables
-        return hash((self.LX, self.LY, self.NL, self.kin_visc_one, self.kin_visc_two, self.density_one, self.density_two, self.gravityX, self.gravityY, self.width, self.surface_tension, self.ref_pressure, self.uWallX, self.drop_radius, self.alpha, self.contact_angle))
+        return hash((self.LX, self.LY, self.NL, self.kin_visc_one, self.kin_visc_two, self.density_one, self.density_two, self.gravityX, self.gravityY, self.width, self.surface_tension, self.ref_pressure, self.uWallX, self.drop_radius, self.alpha, self.contact_angle, self.enable_wetting_boundary))
 
     def __eq__(self, other):
         assertions = []
