@@ -8,7 +8,7 @@ from cglbm.lbm import *
 from cglbm.utils import *
 
 
-@jit
+@partial(jit , static_argnums = 0)
 def simulation_step(system: System, state: State, idx: int) -> State:
     """
     Args:
@@ -144,7 +144,7 @@ def simulation_step(system: System, state: State, idx: int) -> State:
     )
 
 
-@jit
+@partial(jit , static_argnums = 0)
 def multi_step_simulation_block(system: System, state: State, nr_iter):
     return lax.fori_loop(0, nr_iter, lambda i, s: simulation_step(system, s, i), state)
 

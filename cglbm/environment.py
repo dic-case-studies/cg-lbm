@@ -2,13 +2,11 @@
 import jax
 import configparser
 from typing import Tuple
-
 from chex import dataclass
-
-from cglbm.base import Base
+from jax import numpy as jnp
 
 @dataclass
-class State(Base):
+class State:
     """Dynamic tensors that change with each iteration of the simulation.
 
     Attributes:
@@ -41,8 +39,9 @@ class State(Base):
 #     obs_velocity: jax.Array
 #     obs_indices: jax.Array
 
-@dataclass
-class System(Base):
+
+@dataclass(frozen=True, eq=False)
+class System:
     """Descibes a physical environment
 
     Attributes:
@@ -95,6 +94,7 @@ class System(Base):
 
     # N-D Constants
     # [k]
+    # TODO: these can be seperated into a "lattice" variable
     cXs: jax.Array
     cYs: jax.Array
     # TODO: check if cXYs is needed
@@ -104,3 +104,13 @@ class System(Base):
     phi_weights: jax.Array
     M_D2Q9: jax.Array
     invM_D2Q9: jax.Array
+
+    def __hash__(self):
+        # TODO: can not hash jax arrays, so only hashing float variables
+        return hash((self.LX, self.LY, self.NL, self.kin_visc_one, self.kin_visc_two, self.density_one, self.density_two, self.gravityX, self.gravityY, self.width, self.surface_tension, self.ref_pressure, self.uWallX, self.drop_radius, self.alpha, self.contact_angle))
+
+    def __eq__(self, other):
+        assertions = []
+        for key in self:
+            assertions.append(jnp.allclose(self[key], other[key]))
+        return all(assertions)

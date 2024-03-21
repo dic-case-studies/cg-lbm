@@ -91,10 +91,8 @@ def compute_surface_normals(
     """
     # TODO: Add "cs" (speed of sound in lattice units) in the System itself
     # TODO: the "cs_2" variable also needs to be part of compute_phi_grad where we hardcode it to 3
-    cs = 1.0 / jnp.sqrt(3)
-    cs_2 = 3
 
-    grad_solid = cs_2 * jnp.einsum("k,kij,kv->ijv", weights, dst_obs, cXYs)[obs_indices]
+    grad_solid = 3 * jnp.einsum("k,kij,kv->ijv", weights, dst_obs, cXYs)[obs_indices]
 
     mag_grad_solid = jnp.sqrt(jnp.sum(jnp.square(grad_solid), axis=1))
 
@@ -106,7 +104,7 @@ def compute_surface_normals(
     # return jnp.full((len(obs_indices[0]), 2), fill_value=jnp.array([-1, 0]))
 
 
-@jit
+@partial(jit, static_argnums=1)
 def wetting_boundary_condition_solid(
     width: jnp.float32,
     contact_angle: jnp.float32,
@@ -125,15 +123,16 @@ def wetting_boundary_condition_solid(
     Returns:
         phase_field: (i,j,)
     """
-    epsilon = - 2 * jnp.cos(contact_angle) / width
+    epsilon = - 2 * jnp.cos(contact_angle * jnp.pi / 180) / width
     epsilon_inv = 1 / epsilon
 
     normal_indices = (jnp.array(obs_indices).T + surface_normals).astype(dtype=jnp.int32)
     phase_fluid = phase_field[tuple(normal_indices.T)]
 
-    phase_fluid = jnp.abs(epsilon_inv * ((1 + epsilon) - jnp.sqrt((1 + epsilon)
+    if contact_angle != 90:
+        phase_fluid = jnp.abs(epsilon_inv * ((1 + epsilon) - jnp.sqrt((1 + epsilon)
                           ** 2 - 4 * epsilon * phase_fluid)) - phase_fluid)
-
+    
     phase_field = phase_field.at[obs_indices].set(phase_fluid)
 
     return phase_field

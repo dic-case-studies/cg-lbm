@@ -33,7 +33,7 @@ class LBMPerfTest(absltest.TestCase):
     def test_perf_wetting_boundary_condition_solid(self):
         system = test_utils.load_test_config("params.ini")
         width = 4.0
-        contact_angle = jnp.pi / 4
+        contact_angle = 45
 
         def init_fn(rng):
             LX = system.LX
