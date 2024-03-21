@@ -29,7 +29,38 @@ class LBMPerfTest(absltest.TestCase):
 
         test_utils.benchmark("benchmark eq dist phase field", init_fn, step_fn)
 
-    
+
+    def test_perf_wetting_boundary_condition_solid(self):
+        system = test_utils.load_test_config("params.ini")
+        width = 4.0
+        contact_angle = 45
+
+        def init_fn(rng):
+            LX = system.LX
+            LY = system.LY
+            rng = jax.random.split(rng, 3)
+            phase_field = jax.random.uniform(rng[0], (LY, LX))
+            obs_indices = tuple(jax.random.randint(rng[1], (60, 2), 0, min(LX, LY)).T)
+            surface_normals = jax.random.uniform(rng[2], (60, 2))
+
+            return {
+                "phase_field": phase_field,
+                "surface_normals": surface_normals,
+                "obs_indices": obs_indices
+            }
+
+        def step_fn(state):
+            return wetting_boundary_condition_solid(
+                width,
+                contact_angle,
+                state["obs_indices"],
+                state["surface_normals"],
+                state["phase_field"]
+            )
+
+        test_utils.benchmark("benchmark wetting boundary condition", init_fn, step_fn)
+
+
     def test_perf_grid_eq_dist(self):
         system = test_utils.load_test_config("params.ini")
 
@@ -37,15 +68,15 @@ class LBMPerfTest(absltest.TestCase):
             LX = system.LX
             LY = system.LY
             rng1, rng2 = jax.random.split(rng, 2)
-            phi = jax.random.normal(rng1, (LY, LX))
+            pressure = jax.random.normal(rng1, (LY, LX))
             u = jax.random.normal(rng2, (LY, LX, 2))
             return {
-                "phi": phi,
+                "pressure": pressure,
                 "u": u
             }
 
         def step_fn(state):
-            return grid_eq_dist(system.cXYs, system.weights, system.phi_weights, state["phi"], state["u"])
+            return grid_eq_dist(system.cXYs, system.weights, system.phi_weights, state["pressure"], state["u"])
 
         test_utils.benchmark("benchmark grid eq dist", init_fn, step_fn)
 
@@ -74,14 +105,18 @@ class LBMPerfTest(absltest.TestCase):
         def init_fn(rng):
             LX = system.LX
             LY = system.LY
-            rng1, _ = jax.random.split(rng, 2)
-            f = jax.random.normal(rng1, (9, LY, LX))
+            rngs = jax.random.split(rng, 2)
+            phase_field = jax.random.uniform(rngs[0],(LY, LX))
+            f = jax.random.normal(rngs[1], (9, LY, LX))
+            obs_mask = jnp.zeros((LY, LX), dtype=bool)
             return {
-                "f": f
+                "phase_field": phase_field,
+                "f": f,
+                "obs_mask": obs_mask
             }
 
         def step_fn(state):
-            return compute_phase_field(state["f"])
+            return compute_phase_field(state["phase_field"], state["f"], state["obs_mask"])
 
         test_utils.benchmark("benchmark compute phase field", init_fn, step_fn)
 

@@ -8,7 +8,7 @@ from cglbm.lbm import *
 from cglbm.utils import *
 
 
-@jit
+@partial(jit , static_argnums = 0)
 def simulation_step(system: System, state: State, idx: int) -> State:
     """
     Args:
@@ -18,7 +18,26 @@ def simulation_step(system: System, state: State, idx: int) -> State:
     Returns:
         next_state: State
     """
-    phase_field = compute_phase_field(state.f)
+    phase_field = compute_phase_field(state.phase_field, state.f, state.obs)
+
+    dst_obs = compute_dst_obs(
+        system.cXs, system.cYs, state.obs)
+
+    # feature toggle: 
+    # enable_wetting_boundary is a static variable. 
+    # following if block will be removed from jaxpr if enable_wetting_boundary is false
+    if system.enable_wetting_boundary:
+        surface_normals = compute_surface_normals(
+            system.cXYs, system.weights, dst_obs, state.obs_indices)
+
+        phase_field = wetting_boundary_condition_solid(
+            system.width,
+            system.contact_angle,
+            state.obs_indices,
+            surface_normals,
+            phase_field
+        )
+    
     dst_phase_field = compute_dst_phase_field(
         system.cXs, system.cYs, phase_field=phase_field)
 
@@ -113,7 +132,7 @@ def simulation_step(system: System, state: State, idx: int) -> State:
         system.cYs,
         system.cXYs,
         system.weights,
-        state.obs,
+        dst_obs,
         state.obs_velocity,
         N_new,
         f_new
@@ -129,7 +148,7 @@ def simulation_step(system: System, state: State, idx: int) -> State:
     )
 
 
-@jit
+@partial(jit , static_argnums = 0)
 def multi_step_simulation_block(system: System, state: State, nr_iter):
     return lax.fori_loop(0, nr_iter, lambda i, s: simulation_step(system, s, i), state)
 
@@ -138,7 +157,7 @@ def multi_step_simulation_block(system: System, state: State, nr_iter):
 # multi_step_simulation_block so that we can shard and perform pmap later
 def multi_step_simulation(system: System, state: State, nr_iterations: int, nr_snapshots: int = 10) -> Tuple[Any, State]:
     validate_sim_params(nr_iterations, nr_snapshots)
-                        
+
     snapshot_interval = nr_iterations // nr_snapshots
 
     results = [{

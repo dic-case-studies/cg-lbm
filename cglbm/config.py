@@ -1,6 +1,7 @@
 import configparser
 from cglbm.environment import System
 from etils import epath
+import jax.numpy as jnp
 
 # TODO: This should throw an error if file not found
 
@@ -17,7 +18,6 @@ class SimulationParams:
         # We could destructure into a map
         self.LX = int(pt.get("LX", 0))
         self.LY = int(pt.get("LY", 0))
-        self.NL = 9
         self.nr_iterations = int(pt.get("nr_iterations", 0))
         self.nr_samples = int(pt.get("nr_samples", 0))
         self.kin_visc_one = float(pt.get("kin_visc_one", 0.0))
@@ -31,7 +31,10 @@ class SimulationParams:
         self.ref_pressure = float(pt.get("ref_pressure", 0.0))
         self.uWallX = float(pt.get("uWallX", 0.0))
         self.drop_radius = float(pt.get("drop_radius", 0.0))
-        self.Width = 4.0
+        self.contact_angle = float(pt.get("contact_angle", 45))
+
+        pt = config["Features"]
+        self.enable_wetting_boundary = pt.getboolean("enable_wetting_boundary", False)
 
     def print_config(self):
         print(f"LX = {self.LX} LY= {self.LY}")
@@ -45,7 +48,8 @@ class SimulationParams:
         print(f"reference pressure = {self.ref_pressure}")
         print(f"wall velocity = {self.uWallX}")
         print(f"drop radius = {self.drop_radius}")
-        print(f"Width = {self.width}")
+        print(f"contact angle = {self.contact_angle}")
+        print(f"Is wetting boundary enabled? = {self.enable_wetting_boundary}")
 
 
 def load_config(config_file: str) -> System:
@@ -70,6 +74,7 @@ def load_config(config_file: str) -> System:
         # TODO: This has to be part of obstacle not be a part of config
         uWallX=config.uWallX,
         drop_radius=config.drop_radius,
+        contact_angle=config.contact_angle,
         alpha=alpha,
         cXs=cXs,
         cYs=cYs,
@@ -78,7 +83,8 @@ def load_config(config_file: str) -> System:
         weights=weights,
         phi_weights=phi_weights,
         M_D2Q9=M_D2Q9,
-        invM_D2Q9=invM_D2Q9
+        invM_D2Q9=invM_D2Q9,
+        enable_wetting_boundary=config.enable_wetting_boundary
     )
 
 
