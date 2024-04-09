@@ -95,7 +95,7 @@ class System:
     # feature toggle
     # TODO: Put this in a seperate dataclass
     enable_wetting_boundary: bool
-
+    wetting_model: int
     # N-D Constants
     # [k]
     # TODO: these can be seperated into a "lattice" variable

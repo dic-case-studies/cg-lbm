@@ -105,7 +105,7 @@ def compute_surface_normals(
 
 
 @partial(jit, static_argnums=1)
-def wetting_boundary_condition_solid(
+def wetting_boundary_condition_solid_fakhari(
     width: jnp.float32,
     contact_angle: jnp.float32,
     obs_indices: jax.Array,
@@ -132,6 +132,38 @@ def wetting_boundary_condition_solid(
     if contact_angle != 90:
         phase_fluid = jnp.abs(epsilon_inv * ((1 + epsilon) - jnp.sqrt((1 + epsilon)
                           ** 2 - 4 * epsilon * phase_fluid)) - phase_fluid)
+    
+    phase_field = phase_field.at[obs_indices].set(phase_fluid)
+
+    return phase_field
+
+
+@partial(jit, static_argnums=1)
+def wetting_boundary_condition_solid_regularized(
+    width: jnp.float32,
+    contact_angle: jnp.float32,
+    obs_indices: jax.Array,
+    surface_normals: jax.Array,
+    phase_field: jax.Array
+):
+    """
+    Args:
+        width: ()
+        contact_angle: ()
+        obs_indices: [(n,),(n,)]
+        surface_normals: (n,2,)
+        phase_field: (i,j,)
+        
+    Returns:
+        phase_field: (i,j,)
+    """
+    epsilon = jnp.exp(-4 * jnp.cos(contact_angle * jnp.pi / 180) / width)
+
+    normal_indices = (jnp.array(obs_indices).T + surface_normals).astype(dtype=jnp.int32)
+    phase_fluid = phase_field[tuple(normal_indices.T)]
+
+    phase_fluid = jnp.abs(phase_fluid / (epsilon * (1 - phase_fluid) +
+                          phase_fluid))
     
     phase_field = phase_field.at[obs_indices].set(phase_fluid)
 

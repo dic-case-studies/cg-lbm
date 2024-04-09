@@ -30,13 +30,22 @@ def simulation_step(system: System, state: State, idx: int) -> State:
         surface_normals = compute_surface_normals(
             system.cXYs, system.weights, dst_obs, state.obs_indices)
 
-        phase_field = wetting_boundary_condition_solid(
-            system.width,
-            system.contact_angle,
-            state.obs_indices,
-            surface_normals,
-            phase_field
-        )
+        if system.wetting_model == 1:
+            phase_field = wetting_boundary_condition_solid_fakhari(
+                system.width,
+                system.contact_angle,
+                state.obs_indices,
+                surface_normals,
+                phase_field
+            )
+        elif system.wetting_model == 2:
+            phase_field = wetting_boundary_condition_solid_regularized(
+                system.width,
+                system.contact_angle,
+                state.obs_indices,
+                surface_normals,
+                phase_field
+            )
     
     dst_phase_field = compute_dst_phase_field(
         system.cXs, system.cYs, phase_field=phase_field)

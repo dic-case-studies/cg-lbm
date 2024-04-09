@@ -35,6 +35,8 @@ class SimulationParams:
 
         pt = config["Features"]
         self.enable_wetting_boundary = pt.getboolean("enable_wetting_boundary", False)
+        if self.enable_wetting_boundary is True:
+            self.wetting_model = int(pt.get("wetting_model", 1))
 
     def print_config(self):
         print(f"LX = {self.LX} LY= {self.LY}")
@@ -84,7 +86,8 @@ def load_config(config_file: str) -> System:
         phi_weights=phi_weights,
         M_D2Q9=M_D2Q9,
         invM_D2Q9=invM_D2Q9,
-        enable_wetting_boundary=config.enable_wetting_boundary
+        enable_wetting_boundary=config.enable_wetting_boundary,
+        wetting_model=config.wetting_model
     )
 
 
