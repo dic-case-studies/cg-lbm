@@ -1,7 +1,7 @@
 import jax.numpy as jnp
 
 NL = 9
-alpha = 4.0 / 9.0
+# alpha = 4.0 / 9.0
 
 cXs = jnp.array([0, 1, 0, -1, 0, 1, -1, -1, 1], dtype=jnp.int32)
 cYs = jnp.array([0, 0, 1, 0, -1, 1, 1, -1, -1], dtype=jnp.int32)
@@ -12,15 +12,15 @@ cMs = jnp.einsum('km,kn->kmn', cXYs, cXYs)
 weights = jnp.array([4.0 / 9.0,  1.0 / 9.0,  1.0 / 9.0,  1.0 / 9.0,
                     1.0 / 9.0, 1.0 / 36.0, 1.0 / 36.0, 1.0 / 36.0, 1.0 / 36.0])
 
-phi_weights = jnp.array([alpha,
-                        (1.0 - alpha) / 5.0,
-                        (1.0 - alpha) / 5.0,
-                        (1.0 - alpha) / 5.0,
-                        (1.0 - alpha) / 5.0,
-                        (1.0 - alpha) / 20.0,
-                        (1.0 - alpha) / 20.0,
-                        (1.0 - alpha) / 20.0,
-                        (1.0 - alpha) / 20.0])
+# phi_weights = jnp.array([alpha,
+#                         (1.0 - alpha) / 5.0,
+#                         (1.0 - alpha) / 5.0,
+#                         (1.0 - alpha) / 5.0,
+#                         (1.0 - alpha) / 5.0,
+#                         (1.0 - alpha) / 20.0,
+#                         (1.0 - alpha) / 20.0,
+#                         (1.0 - alpha) / 20.0,
+#                         (1.0 - alpha) / 20.0])
 
 M_D2Q9 = jnp.array([
     [1, 1, 1, 1, 1, 1, 1, 1, 1],    [-4, -1, -1, -1, -
@@ -44,3 +44,16 @@ invM_D2Q9 = jnp.array([
     [1 / 9.0, 1 / 18.0, 1 / 36.0, -
         (1 / 6.0), -(1 / 12.0), -(1 / 6.0), -(1 / 12.0), 0, 1 / 4.0],
     [1 / 9.0, 1 / 18.0, 1 / 36.0, 1 / 6.0, 1 / 12.0, -(1 / 6.0), -(1 / 12.0), 0, -(1 / 4.0)]])
+
+
+def compute_phi_weights(alpha):
+    phi_weights = jnp.array([alpha,
+                            (1.0 - alpha) / 5.0,
+                            (1.0 - alpha) / 5.0,
+                            (1.0 - alpha) / 5.0,
+                            (1.0 - alpha) / 5.0,
+                            (1.0 - alpha) / 20.0,
+                            (1.0 - alpha) / 20.0,
+                            (1.0 - alpha) / 20.0,
+                            (1.0 - alpha) / 20.0])
+    return phi_weights

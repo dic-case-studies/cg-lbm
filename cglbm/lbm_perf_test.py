@@ -30,7 +30,7 @@ class LBMPerfTest(absltest.TestCase):
         test_utils.benchmark("benchmark eq dist phase field", init_fn, step_fn)
 
 
-    def test_perf_wetting_boundary_condition_solid(self):
+    def test_perf_wetting_boundary_condition_solid_fakhari(self):
         system = test_utils.load_test_config("params.ini")
         width = 4.0
         contact_angle = 45
@@ -50,7 +50,7 @@ class LBMPerfTest(absltest.TestCase):
             }
 
         def step_fn(state):
-            return wetting_boundary_condition_solid(
+            return wetting_boundary_condition_solid_fakhari(
                 width,
                 contact_angle,
                 state["obs_indices"],
@@ -58,7 +58,37 @@ class LBMPerfTest(absltest.TestCase):
                 state["phase_field"]
             )
 
-        test_utils.benchmark("benchmark wetting boundary condition", init_fn, step_fn)
+        test_utils.benchmark("benchmark wetting boundary condition Fakhari", init_fn, step_fn)
+
+    def test_perf_wetting_boundary_condition_solid_regularized(self):
+        system = test_utils.load_test_config("params.ini")
+        width = 4.0
+        contact_angle = 45
+
+        def init_fn(rng):
+            LX = system.LX
+            LY = system.LY
+            rng = jax.random.split(rng, 3)
+            phase_field = jax.random.uniform(rng[0], (LY, LX))
+            obs_indices = tuple(jax.random.randint(rng[1], (60, 2), 0, min(LX, LY)).T)
+            surface_normals = jax.random.uniform(rng[2], (60, 2))
+
+            return {
+                "phase_field": phase_field,
+                "surface_normals": surface_normals,
+                "obs_indices": obs_indices
+            }
+
+        def step_fn(state):
+            return wetting_boundary_condition_solid_regularized(
+                width,
+                contact_angle,
+                state["obs_indices"],
+                state["surface_normals"],
+                state["phase_field"]
+            )
+
+        test_utils.benchmark("benchmark wetting boundary condition Regularized", init_fn, step_fn)
 
 
     def test_perf_grid_eq_dist(self):

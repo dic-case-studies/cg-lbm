@@ -29,6 +29,8 @@ class SimulationParams:
         self.width = float(pt.get("width", 0.0))
         self.surface_tension = float(pt.get("surface_tension", 0.0))
         self.ref_pressure = float(pt.get("ref_pressure", 0.0))
+        # alpha is an input parameter now
+        self.alpha = float(pt.get("alpha", 4.0/9.0))
         self.uWallX = float(pt.get("uWallX", 0.0))
         self.drop_radius = float(pt.get("drop_radius", 0.0))
         self.contact_angle = float(pt.get("contact_angle", 45))
@@ -37,6 +39,8 @@ class SimulationParams:
         self.enable_wetting_boundary = pt.getboolean("enable_wetting_boundary", False)
         if self.enable_wetting_boundary is True:
             self.wetting_model = int(pt.get("wetting_model", 1))
+        else:
+            self.wetting_model = int(0)
 
     def print_config(self):
         print(f"LX = {self.LX} LY= {self.LY}")
@@ -58,7 +62,10 @@ def load_config(config_file: str) -> System:
     """Loads a system from a given config file"""
     config = SimulationParams(config_file)
 
-    from cglbm.d2q9 import NL, alpha, cXs, cYs, cXYs, cMs, weights, phi_weights, M_D2Q9, invM_D2Q9
+    # from cglbm.d2q9 import NL, alpha, cXs, cYs, cXYs, cMs, weights, phi_weights, M_D2Q9, invM_D2Q9
+    from cglbm.d2q9 import NL, cXs, cYs, cXYs, cMs, weights, M_D2Q9, invM_D2Q9, compute_phi_weights
+    phi_weights = compute_phi_weights(config.alpha)
+    # alpha is an input parameter used to control mobility
 
     return System(
         LX=config.LX,
@@ -77,7 +84,7 @@ def load_config(config_file: str) -> System:
         uWallX=config.uWallX,
         drop_radius=config.drop_radius,
         contact_angle=config.contact_angle,
-        alpha=alpha,
+        alpha=config.alpha,
         cXs=cXs,
         cYs=cYs,
         cXYs=cXYs,
