@@ -262,12 +262,13 @@ def compute_surface_tension_force(
 
 
 @jit
-@partial(vmap, in_axes=(None, None, None, 0, 0, 0, 1), out_axes=0)
-@partial(vmap, in_axes=(None, None, None, 0, 0, 0, 1), out_axes=0)
+@partial(vmap, in_axes=(None, None, None, None, 0, 0, 0, 1), out_axes=0)
+@partial(vmap, in_axes=(None, None, None, None, 0, 0, 0, 1), out_axes=0)
 def compute_mom(
     kin_visc_one: jnp.float32,
     kin_visc_two: jnp.float32,
     M_D2Q9: jax.Array,
+    alpha: jnp.float32,
     u: jax.Array,
     pressure: jax.Array,
     phase_field: jax.Array,
@@ -278,6 +279,7 @@ def compute_mom(
         kin_visc_one: ()
         kin_visc_two: ()
         M_D2Q9: (k,k,)
+        alpha: ()
         u: (i,j,v,)
         pressure: (i,j,)
         phase_field: (i,j,)
@@ -288,7 +290,6 @@ def compute_mom(
         mom_eq: (i,j,k)
         kin_visc_local: (i,j,)
     """
-    alpha = 4.0 / 9.0
     u2 = u[0] * u[0] + u[1] * u[1]
     mom_eq = jnp.array([1.0,
                         -(2 + 18 * alpha) / 5.0 + 3.0 * (u2 + 2 * pressure),

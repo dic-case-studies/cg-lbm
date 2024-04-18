@@ -167,8 +167,8 @@ class LBMSnapshotTest(absltest.TestCase):
         expected_mom = output_3d_helper.get("mom", GRID_3D_SHAPE)
         expected_mom_eq = output_3d_helper.get("mom_eq", GRID_3D_SHAPE)
 
-        actual_d = compute_mom(system.kin_visc_one, system.kin_visc_two, system.M_D2Q9, u,
-                               pressure, phase_field, N)
+        actual_d = compute_mom(system.kin_visc_one, system.kin_visc_two, system.M_D2Q9,
+                               system.alpha, u, pressure, phase_field, N)
         actual = jax.device_get(actual_d)
 
         self.assertTrue(np.allclose(actual[0], expected_mom, atol=1e-7))
