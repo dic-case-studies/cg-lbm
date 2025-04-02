@@ -35,3 +35,15 @@ pytest -s
 ## Examples
 
 Examples of running the simulation are present in [notebooks folder](./notebooks/Color%20Gradient%20Lattice%20Boltzman%20Method.ipynb)
+
+## Acknowledgements
+
+CG-LBM was created from the collaboration between the Engineering for Research (e4r) group, Thoughtworks and [Dr. Amol Subhedar](https://www.che.iitb.ac.in/faculty/amol-subhedar), [Department of Chemical Engineering](https://www.che.iitb.ac.in/), Indian Institute of Technology, Bombay.
+
+### Core Contributors
+
+- [Nimalan M](https://github.com/mark1626/)
+- [Ravinder Jajoria](https://github.com/ravinderj)
+- [Maneesh Sutar](https://github.com/maneesh29s)
+- [Malyadeep Bhattacharya](https://github.com/Malyadeep)
+
